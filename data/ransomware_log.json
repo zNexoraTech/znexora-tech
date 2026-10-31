@@ -1,0 +1,602 @@
+{
+ "56bd9b87a3ecde07": {
+  "group": "everstake",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "90d2e948ec9a932c": {
+  "group": "SilentRansomGroup",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "51bdae7aa7f173e5": {
+  "group": "incransom",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-31"
+ },
+ "d73c22e33d216006": {
+  "group": "emperador",
+  "sector": "Professional Services",
+  "country": "IT",
+  "date": "2026-10-30"
+ },
+ "91b44964531b038f": {
+  "group": "SilentRansomGroup",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "811e017b38c73b67": {
+  "group": "SilentRansomGroup",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "ba1f4b967e46ba3f": {
+  "group": "SilentRansomGroup",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "3000a8bd6ecb0256": {
+  "group": "Whitearmor",
+  "sector": "Transportation",
+  "country": "PH",
+  "date": "2026-10-30"
+ },
+ "8675042fbdd8846c": {
+  "group": "Wallstreet",
+  "sector": "Healthcare",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "9098ea5174117e76": {
+  "group": "rhysida",
+  "sector": "Manufacturing",
+  "country": "MX",
+  "date": "2026-10-30"
+ },
+ "c71965005ea1216c": {
+  "group": "SilentRansomGroup",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "00a0b43c77216a09": {
+  "group": "Doommageddon",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "7dd3fd3d28eaa176": {
+  "group": "rhysida",
+  "sector": "Education",
+  "country": "MY",
+  "date": "2026-10-30"
+ },
+ "86923c2abe187cc7": {
+  "group": "N0n",
+  "sector": "Professional Services",
+  "country": "AE",
+  "date": "2026-10-30"
+ },
+ "6e6b5f219ef734a6": {
+  "group": "Scarlettgroup",
+  "sector": "Retail & E-Commerce",
+  "country": "US",
+  "date": "2026-10-31"
+ },
+ "6c3f69bd72fa86bd": {
+  "group": "SilentRansomGroup",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "f474571ab368a6aa": {
+  "group": "genesis",
+  "sector": "Financial Services",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "73fb788f245d788c": {
+  "group": "genesis",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "fabaf401303bb2c7": {
+  "group": "genesis",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "38ec61a47675537f": {
+  "group": "genesis",
+  "sector": "Healthcare",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "858e1bfeba5eb35d": {
+  "group": "genesis",
+  "sector": "Professional Services",
+  "country": "CA",
+  "date": "2026-10-30"
+ },
+ "84416c30b59efa96": {
+  "group": "genesis",
+  "sector": "Manufacturing",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "8ccfcdb5cf0104b7": {
+  "group": "genesis",
+  "sector": "Not Found",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "c27e769eebb29e95": {
+  "group": "genesis",
+  "sector": "Manufacturing",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "c48ae30101d84996": {
+  "group": "genesis",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "320e48043daf31ad": {
+  "group": "qilin",
+  "sector": "Manufacturing",
+  "country": "DE",
+  "date": "2026-10-30"
+ },
+ "5f19d04f43b2aa46": {
+  "group": "qilin",
+  "sector": "Manufacturing",
+  "country": "TW",
+  "date": "2026-10-30"
+ },
+ "38e17f3ead3da894": {
+  "group": "qilin",
+  "sector": "Energy & Utilities",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "8b19233c4f8e5322": {
+  "group": "qilin",
+  "sector": "Technology",
+  "country": "MX",
+  "date": "2026-10-30"
+ },
+ "fbc906dd5848c436": {
+  "group": "qilin",
+  "sector": "Technology",
+  "country": "CI",
+  "date": "2026-10-30"
+ },
+ "c7b34fc21e84ec42": {
+  "group": "qilin",
+  "sector": "Transportation",
+  "country": "GB",
+  "date": "2026-10-30"
+ },
+ "4af9599c9ea00e2a": {
+  "group": "aurora",
+  "sector": "Manufacturing",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "317beff0cfb378b5": {
+  "group": "akira",
+  "sector": "Energy & Utilities",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "250e98550525fe68": {
+  "group": "qilin",
+  "sector": "Transportation",
+  "country": "PH",
+  "date": "2026-10-30"
+ },
+ "c86c411b4e27c077": {
+  "group": "akira",
+  "sector": "Manufacturing",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "2848ac4b72d62e95": {
+  "group": "akira",
+  "sector": "Transportation",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "f7da142fb364a4d5": {
+  "group": "qilin",
+  "sector": "Healthcare",
+  "country": "MX",
+  "date": "2026-10-30"
+ },
+ "6b6e1ef8729f9e75": {
+  "group": "qilin",
+  "sector": "Other",
+  "country": "MX",
+  "date": "2026-10-30"
+ },
+ "d2019702540121b0": {
+  "group": "qilin",
+  "sector": "Technology",
+  "country": "RO",
+  "date": "2026-10-30"
+ },
+ "4a0a5b18dad0cc09": {
+  "group": "qilin",
+  "sector": "Professional Services",
+  "country": "MX",
+  "date": "2026-10-30"
+ },
+ "e44ae0ba1d560d31": {
+  "group": "aurora",
+  "sector": "Manufacturing",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "f26543fda6324eef": {
+  "group": "Global Secret Group",
+  "sector": "Energy & Utilities",
+  "country": "US",
+  "date": "2026-10-29"
+ },
+ "2353a571b1dc2650": {
+  "group": "Shiba",
+  "sector": "Agriculture and Food Production",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "051a6849baa62ab7": {
+  "group": "Shiba",
+  "sector": "Healthcare",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "6eab814fd3836295": {
+  "group": "Shiba",
+  "sector": "Professional Services",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "ba83877aad4556ef": {
+  "group": "Shiba",
+  "sector": "Healthcare",
+  "country": "GB",
+  "date": "2026-10-29"
+ },
+ "c7ac258067af7ff9": {
+  "group": "everstake",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "8e71addc0e502f5c": {
+  "group": "everstake",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "abf391e72aec29af": {
+  "group": "everstake",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "2308a5ebe9dfe392": {
+  "group": "everstake",
+  "sector": "Technology",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "92e6d66994251108": {
+  "group": "Whitearmor",
+  "sector": "Technology",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "6e0f6efb5d1f6951": {
+  "group": "emperador",
+  "sector": "Retail & E-Commerce",
+  "country": "IT",
+  "date": "2026-10-29"
+ },
+ "efd63244f86ca34b": {
+  "group": "rhysida",
+  "sector": "Financial Services",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "236a2e7a3398c755": {
+  "group": "krybit",
+  "sector": "Transportation",
+  "country": "AT",
+  "date": "2026-10-29"
+ },
+ "e2a53e9bc5a55f3e": {
+  "group": "Booba Project",
+  "sector": "Government & Defense",
+  "country": "US",
+  "date": "2026-10-29"
+ },
+ "3c51f8911504beb9": {
+  "group": "Booba Project",
+  "sector": "Education",
+  "country": "US",
+  "date": "2026-10-29"
+ },
+ "e0b0629318b2a05b": {
+  "group": "Booba Project",
+  "sector": "Government & Defense",
+  "country": "US",
+  "date": "2026-10-29"
+ },
+ "09c6d89f8fe48ce9": {
+  "group": "Booba Project",
+  "sector": "Education",
+  "country": "US",
+  "date": "2026-10-29"
+ },
+ "a39bfb0f4420be51": {
+  "group": "Booba Project",
+  "sector": "Financial Services",
+  "country": "US",
+  "date": "2026-10-29"
+ },
+ "c395e0e027bc905b": {
+  "group": "Booba Project",
+  "sector": "Healthcare",
+  "country": "US",
+  "date": "2026-10-29"
+ },
+ "554d9026d6f0b6f0": {
+  "group": "dragonforce",
+  "sector": "Technology",
+  "country": "??",
+  "date": "2026-10-30"
+ },
+ "be1c068a0db4c871": {
+  "group": "emperador",
+  "sector": "Professional Services",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "36ceb1ffe1ad3f68": {
+  "group": "rhysida",
+  "sector": "Financial Services",
+  "country": "??",
+  "date": "2026-10-29"
+ },
+ "0b0ec7afe2936118": {
+  "group": "Scarlettgroup",
+  "sector": "Healthcare",
+  "country": "CA",
+  "date": "2026-10-29"
+ },
+ "4fef4bc330d5a23f": {
+  "group": "Scarlettgroup",
+  "sector": "Financial Services",
+  "country": "IN",
+  "date": "2026-10-29"
+ },
+ "462a622ce02bdd00": {
+  "group": "qilin",
+  "sector": "Manufacturing",
+  "country": "JP",
+  "date": "2026-10-29"
+ },
+ "8bb7d556abce81ae": {
+  "group": "anubis",
+  "sector": "Healthcare",
+  "country": "US",
+  "date": "2026-10-28"
+ },
+ "471ed2a005078dd1": {
+  "group": "SilentRansomGroup",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-28"
+ },
+ "eefea093665e7c96": {
+  "group": "lockbit5",
+  "sector": "Not Found",
+  "country": "MX",
+  "date": "2026-10-29"
+ },
+ "835bca648d123777": {
+  "group": "lockbit5",
+  "sector": "Financial Services",
+  "country": "TH",
+  "date": "2026-10-29"
+ },
+ "69155278ce196e53": {
+  "group": "SilentRansomGroup",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-28"
+ },
+ "c2af1caefb77fad8": {
+  "group": "SilentRansomGroup",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-28"
+ },
+ "3a2c83ef988d2466": {
+  "group": "SilentRansomGroup",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-28"
+ },
+ "7e56a0b65636299f": {
+  "group": "Wallstreet",
+  "sector": "Manufacturing",
+  "country": "US",
+  "date": "2026-10-28"
+ },
+ "bc661b3051960647": {
+  "group": "Global Secret Group",
+  "sector": "Education",
+  "country": "IL",
+  "date": "2026-10-28"
+ },
+ "96600b75ee876d0a": {
+  "group": "SilentRansomGroup",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-28"
+ },
+ "4075412700f62034": {
+  "group": "rhysida",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-28"
+ },
+ "fdd1355ca991f230": {
+  "group": "payload",
+  "sector": "Manufacturing",
+  "country": "DE",
+  "date": "2026-10-28"
+ },
+ "af0b44ca9198905c": {
+  "group": "payload",
+  "sector": "Manufacturing",
+  "country": "FR",
+  "date": "2026-10-28"
+ },
+ "65892e6ba30991c4": {
+  "group": "N0n",
+  "sector": "Not Found",
+  "country": "MY",
+  "date": "2026-10-28"
+ },
+ "8ffe3496f7a73be8": {
+  "group": "Whitearmor",
+  "sector": "Technology",
+  "country": "DE",
+  "date": "2026-10-28"
+ },
+ "03757d83e390d425": {
+  "group": "Whitearmor",
+  "sector": "Other",
+  "country": "??",
+  "date": "2026-10-28"
+ },
+ "eef4976057270981": {
+  "group": "pear",
+  "sector": "Retail & E-Commerce",
+  "country": "US",
+  "date": "2026-10-30"
+ },
+ "7e42efebc618faf7": {
+  "group": "qilin",
+  "sector": "Education",
+  "country": "ES",
+  "date": "2026-10-29"
+ },
+ "24991e8441a3219f": {
+  "group": "qilin",
+  "sector": "Technology",
+  "country": "GB",
+  "date": "2026-10-29"
+ },
+ "e75ce75286887608": {
+  "group": "Panzer",
+  "sector": "Professional Services",
+  "country": "IT",
+  "date": "2026-10-28"
+ },
+ "0447d82ab65848a6": {
+  "group": "akira",
+  "sector": "Healthcare",
+  "country": "??",
+  "date": "2026-10-28"
+ },
+ "8d1d6700974d505d": {
+  "group": "akira",
+  "sector": "Professional Services",
+  "country": "??",
+  "date": "2026-10-28"
+ },
+ "b7e2e6808d9a5eba": {
+  "group": "aurora",
+  "sector": "Other",
+  "country": "GB",
+  "date": "2026-10-28"
+ },
+ "cd99508ee5ae7efe": {
+  "group": "akira",
+  "sector": "Financial Services",
+  "country": "??",
+  "date": "2026-10-28"
+ },
+ "291962b5e0762bf6": {
+  "group": "aurora",
+  "sector": "Manufacturing",
+  "country": "DE",
+  "date": "2026-10-28"
+ },
+ "315594c90e163382": {
+  "group": "Whitearmor",
+  "sector": "Transportation",
+  "country": "US",
+  "date": "2026-10-28"
+ },
+ "847fe5c12230fe1f": {
+  "group": "emperador",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-27"
+ },
+ "720808eaceb9dcbb": {
+  "group": "play",
+  "sector": "Transportation",
+  "country": "DK",
+  "date": "2026-10-27"
+ },
+ "3352489db4ddaf9c": {
+  "group": "play",
+  "sector": "Retail & E-Commerce",
+  "country": "US",
+  "date": "2026-10-27"
+ },
+ "53a9bc63b69b7dd9": {
+  "group": "play",
+  "sector": "Professional Services",
+  "country": "US",
+  "date": "2026-10-27"
+ },
+ "075233a32138495e": {
+  "group": "play",
+  "sector": "Healthcare",
+  "country": "US",
+  "date": "2026-10-27"
+ },
+ "4e05ef3edbde4f7d": {
+  "group": "play",
+  "sector": "Financial Services",
+  "country": "US",
+  "date": "2026-10-27"
+ },
+ "e13bf9ea5ee23569": {
+  "group": "play",
+  "sector": "Technology",
+  "country": "??",
+  "date": "2026-10-27"
+ },
+ "0038c6b7dfcf951a": {
+  "group": "play",
+  "sector": "Technology",
+  "country": "US",
+  "date": "2026-10-27"
+ }
+}
