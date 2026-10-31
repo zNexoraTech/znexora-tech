@@ -3,6 +3,8 @@ name: Publish site
 on:
   push:
     branches: [main]   # runs when you approve (merge) a draft
+  schedule:
+    - cron: "40 */6 * * *"   # refresh every 6 hours so new blog posts appear on the site
   workflow_dispatch:
 
 permissions:
