@@ -36,12 +36,12 @@ This week we tracked 78 security stories, 10 newly exploited vulnerabilities and
 - **CVE-2026-118527**, Ivanti Connect Secure: Ivanti Connect Secure Generation of Predictable Numbers or Identifiers Vulnerability ([details](../cve-2026-118527-ivanti-connect-secure/))
 - **CVE-2026-111357**, Ivanti Connect Secure: Ivanti Connect Secure Missing Authentication for Critical Function Vulnerability ([details](../cve-2026-111357-ivanti-connect-secure/))
 - **CVE-2026-97229**, GitLab Community Edition and Enterprise Edition: GitLab Community Edition and Enterprise Edition Integer Overflow or Wraparound Vulnerability ([details](../cve-2026-97229-gitlab-community-edition-and-enterprise-edition/))
-- **CVE-2026-76418**, Cisco Secure Firewall ASA Software and Cisco Secure FTD Software: Cisco Secure Firewall ASA Software and Cisco Secure FTD Software Unchecked Return Value to NULL Pointer Dereference Vulnerability ([details](https://nvd.nist.gov/vuln/detail/CVE-2026-76418))
-- **CVE-2026-41709**, Broadcom VMware ESX: Broadcom VMWare ESX Insufficient Logging Vulnerability ([details](https://nvd.nist.gov/vuln/detail/CVE-2026-41709))
-- **CVE-2026-46300**, Linux Kernel: Linux Kernel Missing Initialization of a Variable Vulnerability ([details](https://nvd.nist.gov/vuln/detail/CVE-2026-46300))
-- **CVE-2026-48356**, Adobe Commerce and Magento: Adobe Commerce and Magento Unrestricted Upload of File with Dangerous Type Vulnerability ([details](https://nvd.nist.gov/vuln/detail/CVE-2026-48356))
-- **CVE-2026-111497**, Google Brotli: Google Brotli Unchecked Return Value Vulnerability ([details](https://nvd.nist.gov/vuln/detail/CVE-2026-111497))
-- **CVE-2026-109618**, PHP Group PHP: PHP Memory Corruption Vulnerability ([details](https://nvd.nist.gov/vuln/detail/CVE-2026-109618))
+- **CVE-2026-76418**, Cisco Secure Firewall ASA Software and Cisco Secure FTD Software: Cisco Secure Firewall ASA Software and Cisco Secure FTD Software Unchecked Return Value to NULL Pointer Dereference Vulnerability ([details](../cve-2026-76418-cisco-secure-firewall-asa-software-and-cisco-secure-ftd-software/))
+- **CVE-2026-41709**, Broadcom VMware ESX: Broadcom VMWare ESX Insufficient Logging Vulnerability ([details](../cve-2026-41709-broadcom-vmware-esx/))
+- **CVE-2026-46300**, Linux Kernel: Linux Kernel Missing Initialization of a Variable Vulnerability ([details](../cve-2026-46300-linux-kernel/))
+- **CVE-2026-48356**, Adobe Commerce and Magento: Adobe Commerce and Magento Unrestricted Upload of File with Dangerous Type Vulnerability ([details](../cve-2026-48356-adobe-commerce-and-magento/))
+- **CVE-2026-111497**, Google Brotli: Google Brotli Unchecked Return Value Vulnerability ([details](../cve-2026-111497-google-brotli/))
+- **CVE-2026-109618**, PHP Group PHP: PHP Memory Corruption Vulnerability ([details](../cve-2026-109618-php-group-php/))
 - **CVE-2026-109619**, PHP Group PHP: PHP Stale Internal Request-State Vulnerability ([details](https://nvd.nist.gov/vuln/detail/CVE-2026-109619))
 
 ## Ransomware
