@@ -26,7 +26,7 @@ def feed_url(site):
 
 def bigger(img):
     """Blogger image links carry their size (s72-c, w679-h382 ...). Ask for a sharp 800px version."""
-    return re.sub(r"/(s\d+(-c)?|w\d+-h\d+(-[a-z0-9-]+)?|w\d+)/", "/w800/", img, count=1)
+    return re.sub(r"/(?:s|w|h)\d+(?:-[a-z0-9]+)*/(?=[^/]+$)", "/w1000/", img, count=1)
 
 
 def text_of(desc):

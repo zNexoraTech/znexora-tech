@@ -1,3 +1,8 @@
+/* Fonts are served from this site (no third-party requests). Archivo and Literata: SIL Open Font License. */
+@font-face { font-family: "Archivo"; src: url("fonts/archivo-var.woff2") format("woff2"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
+@font-face { font-family: "Literata"; src: url("fonts/literata-regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Literata"; src: url("fonts/literata-semibold.woff2") format("woff2"); font-weight: 600 700; font-display: swap; }
+
 /* ZNexora Tech: professional news-magazine design.
    White pages, navy type, thin rules; section colors appear only in small labels
    (blue news, violet recap, rose exploited, magenta theory, teal practical, amber blog). */
@@ -107,6 +112,7 @@ h1 a:hover, h2 a:hover, h3 a:hover { color: var(--link); text-decoration: underl
 .card-pic, .row-pic, .lead-pic { display: block; line-height: 0; overflow: hidden; border-radius: var(--radius); background: var(--navy); }
 .card-pic img, .row-pic img, .lead-pic img { width: 100%; height: auto; aspect-ratio: 1200 / 630; object-fit: cover; display: block; transition: transform .25s ease; }
 .card-pic:hover img, .row-pic:hover img, .lead-pic:hover img { transform: scale(1.03); }
+.card-pic img[src*="blogger"], .card-pic img[src*="blogspot"] { object-position: center top; }
 .blog-noimg { display: grid; place-items: center; aspect-ratio: 16 / 9; color: #fff; background: linear-gradient(135deg, #b45309, #7c3aed); }
 
 .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; border-top: 3px solid var(--ink); padding-top: .7rem; margin: 2.4rem 0 1.1rem; }

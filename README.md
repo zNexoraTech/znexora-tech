@@ -194,6 +194,17 @@ Every post automatically gets an original ZNexora Tech graphic in your logo's st
 
 Only use photos you took or made yourself, or have a licence to use. Do not copy photos from news websites.
 
+## Website security (built in)
+
+- **Strict browser security rules (Content Security Policy):** only the site's own scripts, styles and fonts may load; images only from the site and your Blogger blog. No inline code is allowed.
+- **No third-party tracking or fonts:** fonts are hosted on the site itself, so visitors' browsers contact no one else.
+- **No hidden code in posts:** raw HTML in articles is blocked when the site is built.
+- **Anti-clickjacking:** if another website tries to show ZNexora Tech inside a frame, the page hides itself.
+- **security.txt:** `/.well-known/security.txt` tells security researchers how to report a problem (uses `contact_email`, or `security_contact` if you add it to `site.json`).
+- **HTTPS everywhere:** GitHub Pages serves the site over HTTPS. Make sure **Settings > Pages > Enforce HTTPS** is ticked.
+
+GitHub Pages does not let sites set their own server security headers, so online header scanners will show some as "missing". The protections above cover the important ones; if you later move to your own domain, a free Cloudflare account can add the remaining headers.
+
 ## Your Blogger blog
 
 The site reads your Blogger blog automatically (from the "Blog" link in the `social` section of `site.json`) and shows your newest blog posts, with their images, on the home page and on a **Blog** page in the menu. Each one links to the full post on your blog. The site refreshes every 6 hours, so new blog posts appear without any action from you.

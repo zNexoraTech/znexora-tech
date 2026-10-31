@@ -1,5 +1,11 @@
 // Theme toggle (remembers your choice) and instant search.
 (function () {
+  // Refuse to run inside someone else's frame (protects visitors from clickjacking tricks).
+  if (window.top !== window.self) {
+    document.documentElement.style.visibility = 'hidden';
+    try { window.top.location.replace(window.self.location.href); } catch (e) { /* blocked: stay hidden */ }
+    return;
+  }
   var root = document.documentElement;
   function apply(theme) {
     if (theme === 'dark' || theme === 'light') root.setAttribute('data-theme', theme);

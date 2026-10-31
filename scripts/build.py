@@ -165,7 +165,7 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://blogger.googleusercontent.com https://*.bp.blogspot.com https://lh3.googleusercontent.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https://blogger.googleusercontent.com https://*.bp.blogspot.com https://lh3.googleusercontent.com; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>{e(full_title)}</title>
 <meta name="description" content="{e(desc)}">
@@ -182,9 +182,7 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <link rel="alternate" type="application/rss+xml" title="{e(SITE['name'])}" href="{url('/feed.xml')}">
 <link rel="icon" href="{url('/assets/favicon-32.png')}" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="{url('/assets/apple-touch-icon.png')}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap">
+<link rel="preload" href="{url('/assets/fonts/archivo-var.woff2')}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{url('/assets/style.css')}">
 <script src="{url('/assets/app.js')}"></script>
 </head>
@@ -538,6 +536,14 @@ def main():
     write("/404.html", layout("Page not found", '<header class="page-head"><h1>Page not found</h1>'
                                                 f'<p>This page does not exist. <a href="{url("/")}">Go to the latest news</a> or search above.</p></header>'))
     (OUT / ".nojekyll").write_text("")
+    contact = SITE.get("security_contact") or SITE.get("contact_email", "")
+    if contact:
+        expires = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=365)).strftime("%Y-%m-%dT00:00:00Z")
+        contact_uri = contact if contact.startswith(("mailto:", "https://")) else "mailto:" + contact
+        (OUT / ".well-known").mkdir(exist_ok=True)
+        (OUT / ".well-known" / "security.txt").write_text(
+            f"Contact: {contact_uri}\nExpires: {expires}\nPreferred-Languages: en\n"
+            f"Canonical: {BASE_URL}/.well-known/security.txt\nPolicy: {BASE_URL}/about/\n")
     if SITE.get("custom_domain"):
         (OUT / "CNAME").write_text(SITE["custom_domain"].strip() + "\n")
     print(f"Built {len(posts)} post(s) into _site/")
