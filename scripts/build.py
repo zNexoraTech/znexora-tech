@@ -36,6 +36,7 @@ CAT_INTRO = {
     "practical": "Hands-on, step-by-step guides for defending real systems.",
 }
 BLOG = []
+ABOUT_IMG = "/assets/cover-900.jpg"
 e = html.escape
 
 
@@ -315,8 +316,9 @@ def sidebar(posts, skip_exploited=False):
                      f'<a class="more" href="{url(r["path"])}">Read this week’s recap →</a></section>')
     if social_channels():
         parts.append(f'<section class="widget"><h2>Follow ZNexora Tech</h2>{social_pills("follow follow-compact")}</section>')
-    parts.append(f'<section class="widget widget-about"><a href="{url("/about/")}" tabindex="-1" aria-hidden="true">'
-                 f'{img_tag(url("/assets/cover-900.jpg"), "", 900, 600)}</a><h2>About ZNexora Tech</h2>'
+    pic = (f'<a href="{url("/about/")}" tabindex="-1" aria-hidden="true">{img_tag(url(ABOUT_IMG), "", 900, 600)}</a>'
+           if ABOUT_IMG else "")
+    parts.append(f'<section class="widget widget-about">{pic}<h2>About ZNexora Tech</h2>'
                  f'<p>{e(SITE.get("mission") or SITE["description"])}</p><a class="more" href="{url("/about/")}">Learn more →</a></section>')
     sub = SITE.get("newsletter_url") or url("/feed.xml")
     parts.append(f'<section class="widget widget-sub"><h2>Never miss an update</h2><p>Get new articles as soon as they are published.</p>'
@@ -486,9 +488,9 @@ def build_pages():
         title = meta.get("title", path.stem.title())
         content, _ = render_md(body)
         figure = follow = ""
-        if path.stem == "about":
+        if path.stem == "about" and (OUT / "assets" / "cover.jpg").is_file():
             figure = f'<figure class="article-cover">{img_tag(url("/assets/cover.jpg"), "ZNexora Tech: Empowering minds. Securing futures.", 1536, 1024, False)}</figure>'
-            if social_channels():
+        if path.stem == "about" and social_channels():
                 follow = '<section class="about-follow"><h2>Follow ZNexora Tech</h2>' + social_pills() + '</section>'
         body_html = (f'<article class="article article-page"><header class="article-head"><h1>{e(title)}</h1></header>'
                      f'{figure}<div class="prose">{content}</div>{follow}</article>')
@@ -519,14 +521,54 @@ def build_feeds(posts):
     (OUT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml\n")
 
 
+def ensure_cover_images():
+    """Make sure the About picture exists. If cover-900.jpg is missing, create it from
+    cover.jpg or og-image.jpg. Returns the picture to use, or "" to hide the spot."""
+    from PIL import Image
+    assets = OUT / "assets"
+    small = assets / "cover-900.jpg"
+    if small.is_file():
+        return "/assets/cover-900.jpg"
+    for name in ("cover.jpg", "cover.png", "og-image.jpg"):
+        src = assets / name
+        if src.is_file():
+            im = Image.open(src).convert("RGB")
+            im.thumbnail((900, 900))
+            im.save(small, quality=82, optimize=True, progressive=True)
+            print(f"Created assets/cover-900.jpg from {name}")
+            return "/assets/cover-900.jpg"
+    print("No cover picture found in assets/; the About picture is hidden.")
+    return ""
+
+
+def fill_missing_scores(posts):
+    """Look up scores that were not published when a briefing was written (official CVE record)."""
+    from cve_drafts import cve_record_score
+    from common import severity_from_score
+    for p in posts:
+        if p["category"] == "exploited-vulnerabilities" and p.get("cve") and not str(p.get("score", "")).strip():
+            found = cve_record_score(p["cve"])
+            if found.get("score") is not None:
+                p["score"], p["score_source"] = found["score"], found["score_source"]
+                p["severity"] = severity_from_score(found["score"])
+                print(f"Score for {p['cve']}: {p['score']} ({p['severity']}) from {p['score_source']}")
+            else:
+                print(f"Score for {p['cve']}: not published yet")
+
+
 def main():
-    global BLOG
+    global BLOG, ABOUT_IMG
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
     shutil.copytree(ROOT / "assets", OUT / "assets")
+    ABOUT_IMG = ensure_cover_images()
     BLOG = read_blog(SITE)
     posts = load_posts()
+    try:
+        fill_missing_scores(posts)
+    except Exception as exc:  # never stop the site from publishing
+        print(f"Score lookup skipped ({exc})")
     for p in posts:
         if not p["own_image"]:
             make_cover(OUT / "covers" / f"{p['slug']}.jpg", p["title"], p["category"],
