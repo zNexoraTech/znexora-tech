@@ -1,0 +1,65 @@
+{
+  "name": "ZNexora Tech",
+  "tagline": "Navigate the future securely.",
+  "description": "Cybersecurity news, weekly threat recaps, and theory and practical guides to help organizations navigate the future securely.",
+  "url": "https://YOUR-GITHUB-USERNAME.github.io/znexora-tech",
+  "custom_domain": "",
+  "language": "en",
+  "author": "ZNexora Tech",
+  "contact_email": "contact@example.com",
+  "newsletter_url": "",
+  "categories": {
+    "news": "Latest news",
+    "weekly-recap": "Weekly recap",
+    "exploited-vulnerabilities": "Exploited vulnerabilities",
+    "theory": "Theory",
+    "practical": "Practical guides"
+  },
+  "automation": {
+    "ai_model": "claude-haiku-5-5",
+    "news": {
+      "enabled": true,
+      "lookback_hours": 24,
+      "max_drafts_per_run": 3,
+      "feeds": [
+        {
+          "name": "The Hacker News",
+          "url": "https://feeds.feedburner.com/TheHackersNews"
+        },
+        {
+          "name": "BleepingComputer",
+          "url": "https://www.bleepingcomputer.com/feed/"
+        },
+        {
+          "name": "SecurityWeek",
+          "url": "https://www.securityweek.com/feed/"
+        },
+        {
+          "name": "Krebs on Security",
+          "url": "https://krebsonsecurity.com/feed/"
+        },
+        {
+          "name": "The Record",
+          "url": "https://therecord.media/feed"
+        },
+        {
+          "name": "CISA advisories",
+          "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+        }
+      ]
+    },
+    "exploited_vulnerabilities": {
+      "enabled": true,
+      "lookback_days": 7,
+      "max_drafts_per_run": 3
+    },
+    "weekly_recap": {
+      "enabled": true,
+      "top_news": 10
+    },
+    "articles": {
+      "enabled": true
+    }
+  },
+  "mission": "ZNexora Tech represents innovation, cybersecurity excellence, digital transformation, and advanced technology solutions designed to help organizations navigate the future securely."
+}

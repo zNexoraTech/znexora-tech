@@ -1,0 +1,14 @@
+[
+  {"title": "The CIA triad: confidentiality, integrity and availability explained", "type": "theory", "level": "Beginner"},
+  {"title": "How to harden SSH on a Linux server", "type": "practical", "level": "Beginner"},
+  {"title": "Defense in depth: why one security control is never enough", "type": "theory", "level": "Beginner"},
+  {"title": "Detect website defacement with file integrity monitoring", "type": "practical", "level": "Intermediate"},
+  {"title": "How a ransomware attack unfolds, from first access to extortion", "type": "theory", "level": "Intermediate"},
+  {"title": "Set up the 3-2-1 backup rule with restic on Linux", "type": "practical", "level": "Intermediate"},
+  {"title": "Zero trust explained without the marketing", "type": "theory", "level": "Beginner"},
+  {"title": "Add essential security headers to an Nginx website", "type": "practical", "level": "Intermediate"},
+  {"title": "Understanding CVSS scores: what the numbers do and do not tell you", "type": "theory", "level": "Beginner"},
+  {"title": "Find exposed services on your own network with Nmap", "type": "practical", "level": "Intermediate"},
+  {"title": "Phishing: the psychology behind why it works", "type": "theory", "level": "Beginner"},
+  {"title": "Enable and review Windows security event logs that matter", "type": "practical", "level": "Intermediate"}
+]
