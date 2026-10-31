@@ -382,7 +382,10 @@ def build_post(p, posts):
     facts = []
     for label, key in [("CVE", "cve"), ("Vendor", "vendor"), ("Product", "product"), ("CVSS score", "score")]:
         if p.get(key):
-            facts.append(f"<div><dt>{label}</dt><dd>{e(str(p[key]))}</dd></div>")
+            value = str(p[key])
+            if key == "score" and p.get("score_source"):
+                value += f" (source: {p['score_source']})"
+            facts.append(f"<div><dt>{label}</dt><dd>{e(value)}</dd></div>")
     if p.get("severity") and p["category"] == "exploited-vulnerabilities":
         facts.append(f"<div><dt>Severity</dt><dd>{e(SEV_LABEL.get(p['severity'], p['severity']))}</dd></div>")
     if p.get("ransomware", "").lower() == "known":

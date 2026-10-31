@@ -5,12 +5,13 @@ import os
 import time
 
 from common import (POSTS_DIR, PR_FOOTER, automation, commit_state, dump_front_matter,
-                    existing_post_meta, http_json, load_json, save_draft, save_json,
-                    severity_from_score, slugify, today)
+                    existing_post_meta, git, http_json, load_json, parse_front_matter, save_draft,
+                    save_json, severity_from_score, slugify, today)
 from writer import ai_json
 
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={}"
+CVE_ORG_URL = "https://cveawg.mitre.org/api/cve/{}"   # the official CVE record (vendor and CISA scores)
 
 
 def nvd_details(cve):
@@ -34,6 +35,62 @@ def nvd_details(cve):
             out.update(score=cvss.get("baseScore"), vector=cvss.get("vectorString", ""))
             break
     return out
+
+
+def cve_record_score(cve):
+    """Score from the official CVE record: the vendor's own (CNA) score first, then CISA's.
+    These are usually published days or weeks before NVD finishes its analysis."""
+    try:
+        rec = http_json(CVE_ORG_URL.format(cve), timeout=30)
+    except Exception as exc:
+        print(f"  CVE record lookup failed ({exc}).")
+        return {}
+    containers = rec.get("containers", {})
+    cna = containers.get("cna", {})
+    sources = [(cna.get("providerMetadata", {}).get("shortName") or "vendor", cna.get("metrics", []))]
+    sources += [((a.get("providerMetadata", {}).get("shortName") or "ADP"), a.get("metrics", [])) for a in containers.get("adp", [])]
+    for who, metrics in sources:
+        for key in ("cvssV4_0", "cvssV3_1", "cvssV3_0"):
+            for m in metrics or []:
+                data = m.get(key)
+                if data and data.get("baseScore") is not None:
+                    name = "CISA" if who.upper().startswith("CISA") else who[:1].upper() + who[1:]
+                    return {"score": data["baseScore"], "vector": data.get("vectorString", ""), "score_source": name}
+    return {}
+
+
+def best_score(cve, nvd=None):
+    """NVD score if NVD has one, otherwise the official CVE record's score."""
+    nvd = nvd if nvd is not None else nvd_details(cve)
+    if nvd.get("score") is not None:
+        return {"score": nvd["score"], "vector": nvd.get("vector", ""), "score_source": "NVD"}
+    return cve_record_score(cve)
+
+
+def refresh_missing_scores(dry_run):
+    """Fill in scores for published briefings that were posted before any score existed."""
+    changed = []
+    for path in sorted(POSTS_DIR.glob("*.md")):
+        meta, body = parse_front_matter(path.read_text(encoding="utf-8"))
+        if meta.get("category") != "exploited-vulnerabilities" or not meta.get("cve") or str(meta.get("score", "")).strip():
+            continue
+        found = best_score(meta["cve"])
+        time.sleep(1 if os.environ.get("NVD_API_KEY") else 7)
+        if found.get("score") is None:
+            print(f"  {meta['cve']}: still no published score.")
+            continue
+        meta["score"] = found["score"]
+        meta["severity"] = severity_from_score(found["score"])
+        meta["score_source"] = found["score_source"]
+        path.write_text(dump_front_matter(meta, body), encoding="utf-8")
+        changed.append(path)
+        print(f"  {meta['cve']}: score {found['score']} ({meta['severity']}) from {found['score_source']}")
+    if changed and not dry_run:
+        git("add", *[str(p) for p in changed])
+        git("commit", "-m", f"Add missing CVSS scores ({len(changed)})")
+        git("pull", "--rebase", "-X", "theirs", "origin", "main")
+        git("push", "origin", "main")
+    return len(changed)
 
 
 def template_body(item):
@@ -68,6 +125,12 @@ def main():
     if not cfg.get("enabled", True):
         return print("Exploited-vulnerability drafts are turned off in site.json.")
 
+    print("Checking published briefings for missing scores...")
+    try:
+        refresh_missing_scores(args.dry_run)
+    except Exception as exc:  # never let this stop new drafts
+        print(f"  Score refresh skipped ({exc}).")
+
     seen = set(load_json("seen_cves.json", []))
     seen |= {m["cve"] for m in existing_post_meta() if m.get("cve")}
     kev = http_json(KEV_URL)
@@ -86,7 +149,10 @@ def main():
                 "required_action": v.get("requiredAction", ""), "date_added": v.get("dateAdded", ""),
                 "ransomware": v.get("knownRansomwareCampaignUse", ""),
                 "notes": [u.strip() for u in v.get("notes", "").split(";") if u.strip().startswith("http")]}
-        item.update(nvd_details(item["cve"]))
+        nvd = nvd_details(item["cve"])
+        item.update(nvd)
+        if item.get("score") is None:
+            item.update(best_score(item["cve"], nvd))
         print(f"- {item['cve']}")
         facts = "\n".join(f"{k}: {item.get(k) or 'not published'}" for k in
                           ["cve", "vendor", "product", "name", "short_description", "nvd_description",
@@ -103,6 +169,7 @@ def main():
         meta = {"title": title, "date": today().isoformat(), "category": "exploited-vulnerabilities",
                 "summary": summary, "cve": item["cve"], "vendor": item["vendor"], "product": item["product"],
                 "score": item.get("score") or "", "severity": severity_from_score(item.get("score")),
+                "score_source": item.get("score_source", "NVD" if item.get("score") else ""),
                 "ransomware": item["ransomware"], "drafted_by": "ai" if ai else "template",
                 "tags": ", ".join(t for t in [item["vendor"], "Actively exploited",
                                               "Ransomware" if item["ransomware"].lower() == "known" else ""] if t)}
