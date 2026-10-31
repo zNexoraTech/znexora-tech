@@ -71,6 +71,9 @@ def load_posts():
         meta.setdefault("summary", "")
         meta["date"] = meta.get("date") or dt.date.today().isoformat()
         own = pathlib.Path(meta.get("image", "")).name
+        if not own:  # easy way: a photo named exactly like the article, e.g. assets/images/<article-name>.jpg
+            own = next((f"{path.stem}{ext}" for ext in (".jpg", ".jpeg", ".png", ".webp")
+                        if (ROOT / "assets" / "images" / f"{path.stem}{ext}").is_file()), "")
         if own and (ROOT / "assets" / "images" / own).is_file():
             meta["cover"], meta["cover_alt"], meta["own_image"] = f"/assets/images/{own}", meta.get("image_alt", ""), True
         else:
