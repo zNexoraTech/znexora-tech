@@ -157,7 +157,6 @@ main.wrap { padding-top: 2.5rem; padding-bottom: 3rem; }
 .recap-kicker { font-size: .9rem; font-weight: 600; }
 .recap-link { font-weight: 650; }
 .home-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 0 2rem; }
-.home-grid .row a { grid-template-columns: 5rem 1fr; }
 @media (max-width: 900px) { .home-grid { grid-template-columns: 1fr; } }
 .table-wrap { overflow-x: auto; margin: 1rem 0; }
 .table-wrap table { display: table; min-width: 18rem; }
@@ -173,3 +172,27 @@ main.wrap { padding-top: 2.5rem; padding-bottom: 3rem; }
 .hero-topics a { display: inline-block; padding: .45rem .9rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); text-decoration: none; font-weight: 600; font-size: .95rem; }
 .hero-topics a:hover { border-color: var(--electric); color: var(--link); }
 .mission { max-width: 44rem; color: var(--ink); }
+
+/* Graphics */
+.cover, .banner { margin: 0 0 1.5rem; }
+.cover img, .banner img { display: block; width: 100%; height: auto; border-radius: 10px; background: var(--space); box-shadow: 0 1px 0 var(--line); }
+.banner { max-width: 40rem; }
+.rows { container-type: inline-size; }
+.row-thumb { display: none; }
+@container (min-width: 440px) {
+  .row a { grid-template-columns: 5rem 1fr 7rem; }
+  .row-thumb { display: block; align-self: center; }
+  .row-thumb img { display: block; width: 100%; height: auto; border-radius: 6px; background: var(--space); }
+}
+@container (min-width: 620px) {
+  .row a { grid-template-columns: 5.5rem 1fr 10rem; }
+  .row-thumb { display: block; align-self: center; }
+  .row-thumb img { display: block; width: 100%; height: auto; border-radius: 6px; background: var(--space); }
+}
+.recap-feature { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 2rem; align-items: center; }
+.recap-art { display: block; margin-bottom: 1rem; }
+.recap-art img { display: block; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 0 0 1px var(--space-line); }
+@media (min-width: 820px) {
+  .recap-feature { grid-template-columns: minmax(0, 1fr) 22rem; }
+  .recap-art { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
+}

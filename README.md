@@ -130,6 +130,20 @@ Edit `topics.json`. The robot takes the next unused topic every Thursday:
 ### Write posts yourself
 Copy a file from `templates/` (news, weekly-recap, theory, practical) into `content/posts/`, give it a new file name, edit it, and commit. It publishes automatically.
 
+## Graphics on every page
+
+Every post automatically gets an original ZNexora Tech graphic in your logo's style, with its own design for each content type: broadcast rings for news, a weekly grid for recaps, the CVSS score for exploited vulnerabilities, a node network for theory, and a terminal window for practical guides. Section pages get banners too. These graphics also appear when a post is shared on social media.
+
+**To use your own photo for a post instead:**
+1. Upload the photo into `assets/images/` (ideally 1200 x 630 pixels, JPG or PNG).
+2. In the post's top section, add:
+   ```
+   image: my-photo.jpg
+   image_alt: Short description of the photo
+   ```
+
+Only use photos you took or made yourself, or have a licence to use. Do not copy photos from news websites.
+
 ## Your logo and brand files
 Your logo is already built in. The site uses these files in `assets/`:
 

@@ -3,11 +3,14 @@ import datetime as dt
 import email.utils
 import html
 import json
+import pathlib
 import re
 import shutil
 import urllib.parse
 
 import markdown
+
+from covers import make_cover
 
 from common import PAGES_DIR, POSTS_DIR, ROOT, load_site, parse_front_matter
 
@@ -51,6 +54,11 @@ def load_posts():
         meta.setdefault("severity", "")
         meta.setdefault("summary", "")
         meta["date"] = meta.get("date") or dt.date.today().isoformat()
+        own = pathlib.Path(meta.get("image", "")).name  # your own photo in assets/images/
+        if own and (ROOT / "assets" / "images" / own).is_file():
+            meta["cover"], meta["cover_alt"], meta["own_image"] = f"/assets/images/{own}", meta.get("image_alt", ""), True
+        else:
+            meta["cover"], meta["cover_alt"], meta["own_image"] = f"/covers/{path.stem}.jpg", "", False
         posts.append(meta)
     posts.sort(key=lambda p: (p["date"], p["slug"]), reverse=True)
     return posts
@@ -63,7 +71,7 @@ def nice_date(iso):
         return iso
 
 
-def layout(title, body, description="", path="/", og_type="website"):
+def layout(title, body, description="", path="/", og_type="website", image="/assets/og-image.jpg"):
     full_title = title if title == SITE["name"] else f"{title} | {SITE['name']}"
     desc = description or SITE["description"]
     canonical = BASE_URL + path
@@ -87,11 +95,11 @@ def layout(title, body, description="", path="/", og_type="website"):
 <meta property="og:description" content="{e(desc)}">
 <meta property="og:url" content="{e(canonical)}">
 <meta property="og:site_name" content="{e(SITE['name'])}">
-<meta property="og:image" content="{BASE_URL}/assets/og-image.jpg">
+<meta property="og:image" content="{BASE_URL}{image}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="{BASE_URL}/assets/og-image.jpg">
+<meta name="twitter:image" content="{BASE_URL}{image}">
 <meta name="theme-color" content="#040a1f">
 <link rel="alternate" type="application/rss+xml" title="{e(SITE['name'])}" href="{url('/feed.xml')}">
 <link rel="icon" href="{url('/assets/favicon-32.png')}" sizes="32x32" type="image/png">
@@ -155,7 +163,7 @@ def row(p):
             f'<span class="row-main"><span class="row-title">{e(p["title"])}</span>'
             f'<span class="row-sum">{e(p["summary"])}</span>'
             f'<span class="row-meta">{meta}<time datetime="{e(p["date"])}">{nice_date(p["date"])}</time></span>'
-            f'</span></a></li>')
+            f'</span><span class="row-thumb"><img src="{url(p["cover"])}" alt="" width="240" height="126" loading="lazy" decoding="async"></span></a></li>')
 
 
 def post_list(posts, empty="No briefings here yet. New ones appear after they are approved."):
@@ -201,6 +209,7 @@ def build_post(p, posts):
     share_url = urllib.parse.quote(BASE_URL + p["path"], safe="")
     share_text = urllib.parse.quote(p["title"], safe="")
     body = f"""<article class="post">
+  <figure class="cover"><img src="{url(p['cover'])}" alt="{e(p['cover_alt'])}" width="1200" height="630" decoding="async"></figure>
   <header class="post-head">
     <p class="crumb"><a href="{url('/category/' + p['category'] + '/')}">{e(CATS.get(p['category'], p['category']))}</a>
     <time datetime="{e(p['date'])}">{nice_date(p['date'])}</time></p>
@@ -217,7 +226,7 @@ def build_post(p, posts):
   </p>
 </article>
 {related_html}"""
-    write(p["path"], layout(p["title"], body, p["summary"], p["path"], "article"))
+    write(p["path"], layout(p["title"], body, p["summary"], p["path"], "article", p["cover"]))
 
 
 def build_home(posts):
@@ -227,6 +236,7 @@ def build_home(posts):
     if recap:
         r = recap[0]
         recap_html = f"""<section class="recap-feature">
+  <a class="recap-art" href="{url(r['path'])}" tabindex="-1" aria-hidden="true"><img src="{url(r['cover'])}" alt="" width="1200" height="630" loading="lazy"></a>
   <p class="recap-kicker">This week in security</p>
   <h2><a href="{url(r['path'])}">{e(r['title'])}</a></h2>
   <p>{e(r['summary'])}</p>
@@ -260,22 +270,48 @@ def build_home(posts):
     write("/", layout(SITE["name"], body))
 
 
+BANNER_TEXT = {
+    "news": "The security stories that matter, in plain language.",
+    "weekly-recap": "Every Monday: news, ransomware and web defacement in one read.",
+    "exploited-vulnerabilities": "Vulnerabilities attackers are using right now.",
+    "theory": "Security concepts, clearly explained.",
+    "practical": "Hands-on guides for defending your systems.",
+}
+
+
+def banner(key, title, category, subtitle=""):
+    """Make (once) and return the graphic for a section page."""
+    rel = f"/covers/section-{key}.jpg"
+    make_cover(OUT / rel.lstrip("/"), title, category, subtitle=subtitle, key="section-" + key)
+    return rel
+
+
+def list_page(path, title, items, key, category, subtitle):
+    img = banner(key, title, category, subtitle)
+    body = (f'<figure class="banner"><img src="{url(img)}" alt="" width="1200" height="630" decoding="async"></figure>'
+            f'<h1 class="visually-hidden">{e(title)}</h1>{post_list(items)}')
+    write(path, layout(title, body, f"{title}: {subtitle}", path, image=img))
+
+
 def build_lists(posts):
     learn = [p for p in posts if p["category"] in ("theory", "practical")]
-    write("/learn/", layout("Learn", '<h1 class="page-title">Learn: theory and practice</h1>' + post_list(learn), path="/learn/"))
-    write("/posts/", layout("All briefings", f'<h1 class="page-title">All briefings</h1>{post_list(posts)}', path="/posts/"))
+    list_page("/learn/", "Learn: theory and practice", learn, "learn", "theory", "Concepts and hands-on guides for defenders.")
+    list_page("/posts/", "All posts", posts, "all", "news", "Everything published on ZNexora Tech.")
     for slug, name in CATS.items():
-        items = [p for p in posts if p["category"] == slug]
-        write(f"/category/{slug}/", layout(name, f'<h1 class="page-title">{e(name)}</h1>{post_list(items)}',
-                                            f"{name} from {SITE['name']}", f"/category/{slug}/"))
+        list_page(f"/category/{slug}/", name, [p for p in posts if p["category"] == slug], slug, slug,
+                  BANNER_TEXT.get(slug, ""))
 
 
 def build_pages():
     for path in PAGES_DIR.glob("*.md"):
         meta, body = parse_front_matter(path.read_text(encoding="utf-8"))
         title = meta.get("title", path.stem.title())
-        write(f"/{path.stem}/", layout(title, f'<article class="post"><h1 class="page-title">{e(title)}</h1>'
-                                              f'<div class="prose">{render_md(body)}</div></article>', path=f"/{path.stem}/"))
+        figure, img = "", "/assets/og-image.jpg"
+        if path.stem == "about":
+            img = "/assets/og-image.jpg"
+            figure = f'<figure class="cover"><img src="{url(img)}" alt="ZNexora Tech logo" width="1200" height="630"></figure>'
+        write(f"/{path.stem}/", layout(title, f'<article class="post">{figure}<h1 class="page-title">{e(title)}</h1>'
+                                              f'<div class="prose">{render_md(body)}</div></article>', path=f"/{path.stem}/", image=img))
 
 
 def build_feeds(posts):
@@ -308,6 +344,11 @@ def main():
     OUT.mkdir()
     shutil.copytree(ROOT / "assets", OUT / "assets")
     posts = load_posts()
+    for p in posts:
+        if not p["own_image"]:
+            make_cover(OUT / "covers" / f"{p['slug']}.jpg", p["title"], p["category"],
+                       p.get("score", ""), p.get("severity", ""), key=p["slug"])
+    print(f"Drew {sum(not p['own_image'] for p in posts)} graphic(s)")
     for p in posts:
         build_post(p, posts)
     build_home(posts)
