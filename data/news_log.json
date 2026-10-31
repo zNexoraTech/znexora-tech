@@ -6,7 +6,7 @@
   "summary": "A malicious ChatGPT share link could run an attacker's code in the logged-in session of anyone who opened it, allowing them to read their private conversations, researchers at the security firm Parameter showed. The researchers reported the flaw through OpenAI's bug bounty program on October 18, and OpenAI fixed it eight days later and rated it P1, its most serious category.",
   "date": "2026-10-31T05:33:41+00:00",
   "tags": [],
-  "drafted": false
+  "drafted": true
  },
  "21ad2182a1367363": {
   "title": "Cloudflare Reports 18.2 Million Network-Layer DDoS Attacks in Q3, Up 38%",
@@ -15,7 +15,7 @@
   "summary": "Threat actors are launching about 8,226 network-layer distributed denial-of-service (DDoS) attacks per hour, Cloudflare revealed Thursday. The web infrastructure and security company said it autonomously mitigated 18.2 million network-layer (L3) DDoS attacks and 14.4 trillion HTTP DDoS requests in the third quarter of 2026. That amounts to 197,400 attacks per day, or one attack every 0.44",
   "date": "2026-10-31T04:56:12+00:00",
   "tags": [],
-  "drafted": false
+  "drafted": true
  },
  "46d8d781bead54a3": {
   "title": "Chinese Hackers Use AI-Powered ARTEX to Target Over 200 Organizations Worldwide",
@@ -669,7 +669,7 @@
   "tags": [
    "breach"
   ],
-  "drafted": false
+  "drafted": true
  },
  "8258efe8a7ee711d": {
   "title": "Passkeys Are Better Than Passwords. But They Are Not Enough.",
@@ -804,7 +804,7 @@
   "summary": "The DOJ’s Executive Office for U.S. Trustees said a consumer privacy ombudsman is needed to advise the court on how to regulate what data from Character.AI can be sold and under what terms.",
   "date": "2026-10-30T20:45:00+00:00",
   "tags": [],
-  "drafted": false
+  "drafted": true
  },
  "84a2c916c34cca9e": {
   "title": "Fashion retailer Resolve says hackers stole payment card information",
@@ -813,7 +813,7 @@
   "summary": "The company, billing itself as “the next-generation fashion retailer for Millennial and Generation Z consumers,” said a recent hack exposed customer payment card numbers.",
   "date": "2026-10-30T19:00:00+00:00",
   "tags": [],
-  "drafted": false
+  "drafted": true
  },
  "4bf942696238025b": {
   "title": "Florida warns that 4.9 million people had Social Security numbers leaked in financial aid site breach",
@@ -824,7 +824,7 @@
   "tags": [
    "breach"
   ],
-  "drafted": false
+  "drafted": true
  },
  "b44d4a56a6fc2ad8": {
   "title": "Syrian Electronic Army hacker gets prison time for attacks on Western targets",
@@ -843,5 +843,47 @@
   "date": "2026-10-30T12:52:00+00:00",
   "tags": [],
   "drafted": false
+ },
+ "1f2870fb86dff659": {
+  "title": "Chainalysis Confirms Intrusion Into Internal Tools and Exposure of Customer Identity Data",
+  "link": "https://thehackernews.com/2026/10/chainalysis-confirms-intrusion-into.html",
+  "source": "The Hacker News",
+  "summary": "American blockchain analysis firm Chainalysis said it was the target of a cybersecurity incident in which an external actor accessed non-sensitive customer data. However, the company noted that the breach did not result in unauthorized access to its investigation content, authentication credentials, or session tokens. \"This month, Chainalysis detected an external actor using offensive agentic",
+  "date": "2026-10-31T12:01:56+00:00",
+  "tags": [
+   "breach"
+  ],
+  "drafted": true
+ },
+ "4a3beb5aa5ff5440": {
+  "title": "Attackers Chain Three Ivanti Connect Secure Flaws to Gain Unauthenticated Root Access",
+  "link": "https://thehackernews.com/2026/10/attackers-chain-three-ivanti-connect.html",
+  "source": "The Hacker News",
+  "summary": "The U.S. Cybersecurity and Infrastructure Security Agency (CISA) on Friday added two security flaws impacting Ivanti Connect Secure (ICS) to its Known Exploited Vulnerabilities (KEV) catalog, following active exploitation in the wild. The vulnerabilities are listed below - CVE-2026-111357 (CVSS score: 8.8) - A missing authentication for a critical function vulnerability that could allow a",
+  "date": "2026-10-31T08:27:43+00:00",
+  "tags": [
+   "vulnerability"
+  ],
+  "drafted": true
+ },
+ "a291b7051796cec4": {
+  "title": "Chainalysis discloses data breach from \"offensive agentic techniques\"",
+  "link": "https://www.bleepingcomputer.com/news/security/chainalysis-discloses-data-breach-from-offensive-agentic-techniques/",
+  "source": "BleepingComputer",
+  "summary": "Blockchain analytics firm Chainalysis disclosed a data breach after attackers used \"offensive agentic techniques\" to access internal systems and tools, exposing customer names, email addresses, user IDs, and organizational roles. [...]",
+  "date": "2026-10-31T12:50:09+00:00",
+  "tags": [
+   "breach"
+  ],
+  "drafted": true
+ },
+ "f0c80b908a885d8f": {
+  "title": "Syrian Hacker Gets Prison Time in US After Over a Decade on the Run",
+  "link": "https://www.securityweek.com/syrian-hacker-gets-prison-time-in-us-after-over-a-decade-on-the-run/",
+  "source": "SecurityWeek",
+  "summary": "A US court sentenced Syrian hacker Ahmad Umar Agha to 42 months for pro-Assad attacks on media, businesses, and government entities. The post Syrian Hacker Gets Prison Time in US After Over a Decade on the Run appeared first on SecurityWeek .",
+  "date": "2026-10-31T11:00:00+00:00",
+  "tags": [],
+  "drafted": true
  }
 }
