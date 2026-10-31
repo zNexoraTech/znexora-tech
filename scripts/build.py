@@ -87,6 +87,8 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>{e(full_title)}</title>
 <meta name="description" content="{e(desc)}">
 <link rel="canonical" href="{e(canonical)}">

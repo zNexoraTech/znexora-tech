@@ -102,10 +102,60 @@ Secrets go in **Settings > Secrets and variables > Actions > New repository secr
 Free key from https://nvd.nist.gov/developers/request-an-api-key → secret `NVD_API_KEY`.
 
 ### Automatic social sharing (free)
+
+Facebook and Instagram are covered further below.
 - **Telegram channel:** in Telegram talk to `@BotFather` > `/newbot` > token → `TELEGRAM_BOT_TOKEN`. Create a public channel, add the bot as admin, use `@yourchannel` → `TELEGRAM_CHAT_ID`.
 - **Discord:** Server Settings > Integrations > Webhooks > New > Copy URL → `DISCORD_WEBHOOK_URL`.
 - **Bluesky:** Settings > Privacy and security > App passwords → `BLUESKY_HANDLE` and `BLUESKY_APP_PASSWORD`.
 - **Mastodon:** Preferences > Development > New application (`write:statuses`) → `MASTODON_INSTANCE` (e.g. `infosec.exchange`) and `MASTODON_TOKEN`.
+
+### Facebook and Instagram auto-posting
+
+When you approve a post, it is shared to your **Facebook Page** (with a link preview) and your **Instagram** (the post's graphic with a caption and hashtags). Free.
+
+### What you need first
+- A **Facebook Page** for ZNexora Tech. (Meta does not allow automatic posting to personal profiles, only to Pages.)
+- An **Instagram professional account** (Business or Creator), linked to that Page.
+  - Instagram app > Settings > **Account type and tools** > **Switch to professional account**.
+  - Facebook Page > Settings > **Linked accounts** > Instagram > **Connect**.
+
+### Get your keys (about 20 minutes, one time)
+Meta changes these screens often. If something looks different, send a screenshot.
+
+1. Go to https://developers.facebook.com, log in, and click **My Apps** > **Create App**.
+2. Name it `ZNexora Tech Publisher`. When asked for a use case, choose the ones for **managing your Page** and **Instagram content publishing**. Finish creating the app.
+3. Open **Tools** > **Graph API Explorer**. On the right, choose your app, then **User Token**.
+4. Under **Permissions**, add: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`, `business_management`.
+5. Click **Generate Access Token** and approve everything, selecting your ZNexora Tech Page and Instagram account.
+6. Make it long-lasting: open **Tools** > **Access Token Debugger**, paste the token, click **Debug**, then **Extend Access Token** at the bottom. Copy the new token.
+7. Back in the Graph API Explorer, paste the extended token into the token box, type `me/accounts` in the address box and click **Submit**. Find your Page in the result and copy:
+   - its `id` → this is your **FACEBOOK_PAGE_ID**
+   - its `access_token` → this is your **FACEBOOK_PAGE_TOKEN** (a Page token made this way does not expire)
+8. Type `YOUR-PAGE-ID?fields=instagram_business_account` (with your real Page id) and click **Submit**. Copy the `id` inside `instagram_business_account` → this is your **INSTAGRAM_ACCOUNT_ID**.
+9. In your GitHub repository: **Settings > Secrets and variables > Actions > New repository secret**, and add the three secrets with those exact names.
+
+The app can stay in **development mode**: you are posting only to your own Page, as its admin.
+
+**Never paste these tokens anywhere else**: not in files, emails or chats (including this one). Anyone with the Page token can post as your Page.
+
+### Keeping ZNexora Tech secure
+
+**Your accounts (most important)**
+1. **GitHub:** turn on two-factor authentication: profile picture > **Settings > Password and authentication**. Use an authenticator app or passkey, and save the recovery codes somewhere safe offline.
+2. **Email:** turn on 2-Step Verification for the email linked to GitHub and Facebook. Whoever controls your email can reset everything else.
+3. **Facebook and Instagram:** turn on two-factor authentication in **Accounts Center > Password and security**.
+
+**Your repository**
+4. **Only merge drafts from `github-actions[bot]` or yourself.** Your repository is public, so strangers can open pull requests too. Never merge one you didn't expect.
+5. **Turn on GitHub's free security alerts:** repository **Settings**, look for the security section (called **Advanced Security** or **Code security**), and enable **Dependabot alerts**, **Secret scanning** and **Push protection**. These warn you about outdated components and block accidental key leaks.
+6. **Check nobody else has access:** **Settings > Collaborators** should be empty unless you added someone on purpose.
+7. **Keys only as GitHub Secrets.** Secrets are encrypted and hidden even in a public repository.
+
+**Your website (already done for you)**
+- HTTPS on every page, no tracking cookies, no ads.
+- Posts cannot contain hidden scripts: raw HTML in posts is blocked.
+- Every page carries browser security rules (a Content Security Policy) that only allow your own scripts and images, plus Google Fonts.
+- Your contact email is public on the About page; a separate address for the site reduces spam to your personal inbox.
 
 ### Email newsletter
 Your feed is `https://YOUR-SITE/feed.xml`. Use a newsletter service with **RSS-to-email** (Buttondown, MailerLite, Brevo, Kit; check the free plan includes it). Put the signup page link in `site.json` → `"newsletter_url"`.

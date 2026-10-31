@@ -2,6 +2,7 @@
 import datetime as dt
 import html
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -21,7 +22,17 @@ def load_site():
     return json.loads((ROOT / "site.json").read_text(encoding="utf-8"))
 
 
+def sync_with_github():
+    """On GitHub, always start from the newest version of the site and its memory.
+    (A re-run would otherwise replay an old copy and clash with newer saved memory.)"""
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+    subprocess.run(["git", "fetch", "origin", "main"], cwd=ROOT, check=True, capture_output=True)
+    subprocess.run(["git", "checkout", "-f", "-B", "main", "origin/main"], cwd=ROOT, check=True, capture_output=True)
+
+
 def automation(section):
+    sync_with_github()
     site = load_site()
     auto = site.get("automation", {})
     return site, auto.get(section, {}), auto.get("ai_model", "claude-haiku-5-5")
@@ -227,8 +238,15 @@ def commit_state(message, dry_run):
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
         return
     git("commit", "-m", message)
-    git("pull", "--rebase", "origin", "main")
-    git("push", "origin", "main")
+    for attempt in range(3):  # if GitHub moved on meanwhile, keep our newer memory and try again
+        try:
+            git("pull", "--rebase", "-X", "theirs", "origin", "main")
+            git("push", "origin", "main")
+            return
+        except subprocess.CalledProcessError as exc:
+            subprocess.run(["git", "rebase", "--abort"], cwd=ROOT, capture_output=True)
+            print(f"  saving memory: attempt {attempt + 1} failed ({(exc.stderr or '').strip()[:200]})")
+    print("  Could not save the robot's memory this time. Drafts were still created; it will retry next run.")
 
 
 PR_FOOTER = """
