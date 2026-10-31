@@ -1,4 +1,8 @@
-"""Builds the whole website into the _site folder. Run: python scripts/build.py"""
+"""Builds the whole website into the _site folder. Run: python scripts/build.py
+
+Layout: a professional news-magazine design (lead story, latest headlines, sections with
+thumbnails, sidebar) and long-form article pages (byline, tags, key points, contents, share).
+"""
 import datetime as dt
 import email.utils
 import html
@@ -10,19 +14,28 @@ import urllib.parse
 
 import markdown
 
-from covers import make_cover
-
+from blog_feed import read_blog
 from common import PAGES_DIR, POSTS_DIR, ROOT, load_site, parse_front_matter
+from covers import make_cover
 
 OUT = ROOT / "_site"
 SITE = load_site()
 BASE_URL = SITE["url"].rstrip("/")
 if SITE.get("custom_domain"):
     BASE_URL = "https://" + SITE["custom_domain"].strip().strip("/")
-BP = urllib.parse.urlparse(BASE_URL).path.rstrip("/")  # e.g. "/secbrief" on github.io
+BP = urllib.parse.urlparse(BASE_URL).path.rstrip("/")
 CATS = SITE.get("categories", {})
-KIND = {"news": "News", "weekly-recap": "Recap", "theory": "Theory", "practical": "Practical"}
 SEV_LABEL = {"critical": "Critical", "high": "High", "medium": "Medium", "low": "Low", "unscored": "Not scored"}
+TONE = {"news": "t-news", "weekly-recap": "t-recap", "exploited-vulnerabilities": "t-exploit",
+        "theory": "t-theory", "practical": "t-practical", "blog": "t-blog"}
+CAT_INTRO = {
+    "news": "The security stories that matter, explained in plain language.",
+    "weekly-recap": "Every Monday: the week’s top news, ransomware activity and web defacement in one read.",
+    "exploited-vulnerabilities": "Vulnerabilities attackers are using right now, with what to patch first.",
+    "theory": "Security concepts made clear, from fundamentals to advanced topics.",
+    "practical": "Hands-on, step-by-step guides for defending real systems.",
+}
+BLOG = []
 e = html.escape
 
 
@@ -30,14 +43,18 @@ def url(path):
     return f"{BP}{path}"
 
 
+# ---------------------------------------------------------------- content
 def render_md(text):
-    """Markdown to HTML with raw HTML switched off, so posts can never inject scripts."""
-    md = markdown.Markdown(extensions=["tables", "pymdownx.superfences", "sane_lists"])
+    """Markdown to HTML with raw HTML switched off, so posts can never inject scripts.
+    Returns (html, [(id, heading)]) for the article's table of contents."""
+    md = markdown.Markdown(extensions=["tables", "pymdownx.superfences", "sane_lists", "toc"])
     md.preprocessors.deregister("html_block")
     md.inlinePatterns.deregister("html")
     out = md.convert(text)
     out = re.sub(r'href="\s*(javascript|data|vbscript):[^"]*"', 'href="#"', out, flags=re.I)
-    return out.replace("<table>", '<div class="table-wrap"><table>').replace("</table>", "</table></div>")
+    out = out.replace("<table>", '<div class="table-wrap"><table>').replace("</table>", "</table></div>")
+    toc = [(t["id"], t["name"]) for t in getattr(md, "toc_tokens", []) if t.get("level") == 2]
+    return out, toc
 
 
 def load_posts():
@@ -46,31 +63,33 @@ def load_posts():
         meta, body = parse_front_matter(path.read_text(encoding="utf-8"))
         if not meta.get("title") or meta.get("draft", "").lower() == "true":
             continue
-        meta["slug"] = path.stem
-        meta["path"] = f"/posts/{path.stem}/"
-        meta["html"] = render_md(body)
-        meta["minutes"] = max(1, round(len(body.split()) / 200))
+        meta["slug"], meta["path"] = path.stem, f"/posts/{path.stem}/"
+        meta["html"], meta["toc"] = render_md(body)
+        meta["minutes"] = max(1, round(len(body.split()) / 220))
         meta.setdefault("category", "news")
         meta.setdefault("severity", "")
         meta.setdefault("summary", "")
         meta["date"] = meta.get("date") or dt.date.today().isoformat()
-        own = pathlib.Path(meta.get("image", "")).name  # your own photo in assets/images/
+        own = pathlib.Path(meta.get("image", "")).name
         if own and (ROOT / "assets" / "images" / own).is_file():
             meta["cover"], meta["cover_alt"], meta["own_image"] = f"/assets/images/{own}", meta.get("image_alt", ""), True
         else:
             meta["cover"], meta["cover_alt"], meta["own_image"] = f"/covers/{path.stem}.jpg", "", False
+        meta["tag_list"] = [t.strip() for t in meta.get("tags", "").split(",") if t.strip()]
         posts.append(meta)
     posts.sort(key=lambda p: (p["date"], p["slug"]), reverse=True)
     return posts
 
 
-def nice_date(iso):
+def nice_date(iso, long=False):
     try:
-        return dt.date.fromisoformat(iso[:10]).strftime("%-d %b %Y")
+        d = dt.date.fromisoformat(iso[:10])
     except ValueError:
         return iso
+    return d.strftime("%A, %-d %B %Y") if long else d.strftime("%-d %b %Y")
 
 
+# ---------------------------------------------------------------- icons & channels
 ICON = {
     "news": '<path d="M4 5h13v14H6a2 2 0 0 1-2-2V5Z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 9h7M7 12h7M7 15h4"/>',
     "weekly-recap": '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M16 14h.5M8 17h2M12 17h2"/>',
@@ -97,15 +116,12 @@ def icon(name, size=24):
             f'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICON[name]}</svg>')
 
 
-CHANNEL = {  # label in site.json "social" -> (icon, color tone)
-    "facebook": ("people", "t-news"), "instagram": ("camera", "t-theory"), "tiktok": ("music", "t-exploit"),
-    "youtube": ("play", "t-exploit"), "whatsapp": ("chat", "t-practical"), "telegram": ("send", "t-news"),
-    "blog": ("pen", "t-recap"), "linkedin": ("briefcase", "t-news"),
-}
+CHANNEL = {"facebook": ("people", "t-news"), "instagram": ("camera", "t-theory"), "tiktok": ("music", "t-exploit"),
+           "youtube": ("play", "t-exploit"), "whatsapp": ("chat", "t-practical"), "telegram": ("send", "t-news"),
+           "blog": ("pen", "t-recap"), "linkedin": ("briefcase", "t-news")}
 
 
 def social_channels():
-    """Your channels from site.json, in the order written there (only full https:// links)."""
     out = []
     for label, link in (SITE.get("social") or {}).items():
         link = str(link).strip()
@@ -122,35 +138,34 @@ def social_pills(cls="follow"):
     return f'<ul class="{cls}">{items}</ul>' if items else ""
 
 
-PILLARS = [
-    ("news", "/category/news/", "Latest news", "Today’s security stories, explained in plain language."),
-    ("weekly-recap", "/category/weekly-recap/", "Weekly recap", "Every Monday: news, ransomware and web defacement."),
-    ("exploited-vulnerabilities", "/category/exploited-vulnerabilities/", "Exploited vulnerabilities", "What attackers are using right now, and how to patch."),
-    ("theory", "/category/theory/", "Theory", "Security concepts made clear, from basics to advanced."),
-    ("practical", "/category/practical/", "Practical guides", "Hands-on steps to protect real systems."),
-]
-TONE = {"news": "t-news", "weekly-recap": "t-recap", "exploited-vulnerabilities": "t-exploit", "theory": "t-theory", "practical": "t-practical"}
+def blog_home():
+    return str((SITE.get("blog") or {}).get("url") or (SITE.get("social") or {}).get("Blog", "")).strip()
 
 
+# ---------------------------------------------------------------- page frame
 def layout(title, body, description="", path="/", og_type="website", image="/assets/og-image.jpg"):
     full_title = title if title == SITE["name"] else f"{title} | {SITE['name']}"
     desc = description or SITE["description"]
     canonical = BASE_URL + path
+    image_abs = image if image.startswith("https://") else BASE_URL + image
+
     def nav_link(href, label):
         here = ' aria-current="page"' if path == href else ""
-        return f'<a href="{url(href)}"{here}>{e(label)}</a>'
-    nav = "".join(nav_link(f"/category/{slug}/", name) for slug, name in CATS.items())
-    subscribe = (f'<a class="subscribe" href="{e(SITE["newsletter_url"])}" rel="noopener">Get the email briefing</a>'
-                 if SITE.get("newsletter_url") else "")
-    year = dt.date.today().year
-    social = "".join(f'<li><a class="foot-chan" href="{e(link)}" rel="noopener" target="_blank">{icon(ico, 16)}{e(label)}</a></li>'
-                     for label, link, ico, tone in social_channels())
+        return f'<li><a href="{url(href)}"{here}>{e(label)}</a></li>'
+    nav = (nav_link("/", "Home") + "".join(nav_link(f"/category/{s}/", n) for s, n in CATS.items())
+           + (nav_link("/blog/", "Blog") if blog_home().startswith("https://") else "") + nav_link("/about/", "About"))
+    top_social = "".join(f'<li><a href="{e(link)}" rel="noopener" target="_blank" aria-label="{e(label)}">{icon(ico, 15)}</a></li>'
+                         for label, link, ico, tone in social_channels())
+    subscribe_href = SITE.get("newsletter_url") or url("/feed.xml")
+    foot_social = "".join(f'<li><a class="foot-chan" href="{e(link)}" rel="noopener" target="_blank">{icon(ico, 16)}{e(label)}</a></li>'
+                          for label, link, ico, tone in social_channels())
+    today = dt.date.today()
     return f"""<!doctype html>
 <html lang="{e(SITE.get('language', 'en'))}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://blogger.googleusercontent.com https://*.bp.blogspot.com https://lh3.googleusercontent.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>{e(full_title)}</title>
 <meta name="description" content="{e(desc)}">
@@ -160,15 +175,12 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <meta property="og:description" content="{e(desc)}">
 <meta property="og:url" content="{e(canonical)}">
 <meta property="og:site_name" content="{e(SITE['name'])}">
-<meta property="og:image" content="{BASE_URL}{image}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image" content="{e(image_abs)}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="{BASE_URL}{image}">
-<meta name="theme-color" content="#040a1f">
+<meta name="twitter:image" content="{e(image_abs)}">
+<meta name="theme-color" content="#0b1a3a">
 <link rel="alternate" type="application/rss+xml" title="{e(SITE['name'])}" href="{url('/feed.xml')}">
 <link rel="icon" href="{url('/assets/favicon-32.png')}" sizes="32x32" type="image/png">
-<link rel="icon" href="{url('/assets/icon-512.png')}" sizes="512x512" type="image/png">
 <link rel="apple-touch-icon" href="{url('/assets/apple-touch-icon.png')}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -178,12 +190,18 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+<div class="topbar"><div class="wrap topbar-row">
+  <span class="today">{today.strftime('%A, %-d %B %Y')}</span>
+  <span class="topbar-tag">Cybersecurity news, insights &amp; practical guides</span>
+  <ul class="topbar-social">{top_social}</ul>
+  <a class="topbar-sub" href="{e(subscribe_href)}">{icon("bell", 15)}Subscribe</a>
+</div></div>
 <header class="masthead">
   <div class="wrap masthead-row">
     <a class="brand" href="{url('/')}"><img class="logo-on-light" src="{url('/assets/logo-light.png')}" alt="{e(SITE['name'])}" width="379" height="120"><img class="logo-on-dark" src="{url('/assets/logo.png')}" alt="{e(SITE['name'])}" width="347" height="184"></a>
     <div class="tools">
       <div class="search">
-        <label class="visually-hidden" for="search-input">Search briefings</label>
+        <label class="visually-hidden" for="search-input">Search ZNexora Tech</label>
         <input id="search-input" type="search" placeholder="Search news, CVEs, topics" autocomplete="off" data-index="{url('/search-index.json')}">
         <ul id="search-results" hidden></ul>
       </div>
@@ -192,7 +210,7 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
       </button>
     </div>
   </div>
-  <nav class="wrap catnav" aria-label="Categories">{nav_link("/posts/", "All posts")}{nav}</nav>
+  <nav class="mainnav" aria-label="Sections"><div class="wrap"><ul>{nav}</ul></div></nav>
   <div class="color-strip" aria-hidden="true"></div>
 </header>
 <main id="main" class="wrap">
@@ -205,13 +223,13 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
       <img src="{url('/assets/logo.png')}" alt="{e(SITE['name'])}" width="347" height="184" loading="lazy">
       <p class="mission">{e(SITE.get('mission') or SITE['description'])}</p>
     </div>
-    <nav aria-label="Sections"><h2>Explore</h2><ul>{"".join(f'<li><a href="{url("/category/" + s + "/")}">{e(n)}</a></li>' for s, n in CATS.items())}</ul></nav>
-    <div><h2>Follow us</h2><ul class="foot-follow">{social}<li><a class="foot-chan" href="{url('/feed.xml')}">{icon("bell", 16)}RSS feed</a></li>{('<li>' + subscribe + '</li>') if subscribe else ''}</ul>
-      <h2 class="foot-more">More</h2><ul><li><a href="{url('/about/')}">About</a></li><li><a href="{url('/privacy/')}">Privacy</a></li></ul></div>
+    <nav aria-label="Sections"><h2>Sections</h2><ul>{"".join(f'<li><a href="{url("/category/" + s + "/")}">{e(n)}</a></li>' for s, n in CATS.items())}{'<li><a href="' + url('/blog/') + '">Blog</a></li>' if blog_home().startswith('https://') else ''}</ul></nav>
+    <div><h2>Follow us</h2><ul class="foot-follow">{foot_social}<li><a class="foot-chan" href="{url('/feed.xml')}">{icon("bell", 16)}RSS feed</a></li></ul></div>
+    <div><h2>Company</h2><ul><li><a href="{url('/about/')}">About</a></li><li><a href="{url('/privacy/')}">Privacy</a></li><li><a href="{url('/posts/')}">All articles</a></li></ul></div>
   </div>
   <div class="wrap footer-bottom">
     <p class="motto"><span>Stay curious.</span> <span>Stay secure.</span> <span>Stay ahead.</span></p>
-    <p class="fine">© {year} {e(SITE['name'])}. Content summarises public sources. Always confirm details with the vendor or original report.</p>
+    <p class="fine">© {today.year} {e(SITE['name'])}. Content summarises public sources. Always confirm details with the vendor or original report.</p>
   </div>
 </footer>
 </body>
@@ -219,34 +237,93 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 """
 
 
-def score_cell(p):
-    score = p.get("score") or ""
-    sev = p.get("severity") or ""
-    if not sev:
-        kind = KIND.get(p.get("category"), "Brief")
-        return f'<span class="score kind kind-{e(p.get("category", ""))}"><span class="kind-label">{e(kind)}</span></span>'
-    shown = score if score else "?"
-    return (f'<span class="score sev-{e(sev)}" title="{e(SEV_LABEL.get(sev, sev))}">'
-            f'<span class="score-num">{e(str(shown))}</span>'
-            f'<span class="score-sev">{e(SEV_LABEL.get(sev, sev))}</span></span>')
+# ---------------------------------------------------------------- building blocks
+def kicker(p):
+    name = "Blog" if p.get("category") == "blog" else CATS.get(p["category"], p["category"])
+    return f'<span class="kicker {TONE.get(p["category"], "t-news")}">{e(name)}</span>'
+
+
+def sev_chip(p):
+    sev = p.get("severity")
+    if p.get("category") != "exploited-vulnerabilities" or not sev:
+        return ""
+    score = p.get("score") or "?"
+    return f'<span class="sev sev-{e(sev)}">{e(str(score))} {e(SEV_LABEL.get(sev, sev))}</span>'
+
+
+def meta_line(p):
+    return f'<p class="meta">{sev_chip(p)}<time datetime="{e(p["date"])}">{nice_date(p["date"])}</time></p>'
+
+
+def img_tag(src, alt="", w=1200, h=630, lazy=True):
+    loading = ' loading="lazy"' if lazy else ""
+    return f'<img src="{e(src)}" alt="{e(alt)}" width="{w}" height="{h}"{loading} decoding="async">'
+
+
+def card(p, size="md"):
+    """A story card: picture, section, headline, date."""
+    href = url(p["path"])
+    pic = img_tag(url(p["cover"]), p.get("cover_alt", ""))
+    dek = f'<p class="dek">{e(p["summary"])}</p>' if size in ("lg",) and p["summary"] else ""
+    return (f'<article class="card card-{size}"><a class="card-pic" href="{href}" tabindex="-1" aria-hidden="true">{pic}</a>'
+            f'<div class="card-body">{kicker(p)}<h3><a href="{href}">{e(p["title"])}</a></h3>{dek}{meta_line(p)}</div></article>')
 
 
 def row(p):
-    who = " ".join(x for x in [p.get("vendor", ""), p.get("product", "")] if x) or p.get("source", "")
-    meta = f'<span>{e(who)}</span>' if who else f'<span>{e(CATS.get(p["category"], p["category"]))}</span>'
-    return (f'<li class="row"><a href="{url(p["path"])}">{score_cell(p)}'
-            f'<span class="row-main"><span class="row-title">{e(p["title"])}</span>'
-            f'<span class="row-sum">{e(p["summary"])}</span>'
-            f'<span class="row-meta">{meta}<time datetime="{e(p["date"])}">{nice_date(p["date"])}</time></span>'
-            f'</span><span class="row-thumb"><img src="{url(p["cover"])}" alt="" width="240" height="126" loading="lazy" decoding="async"></span></a></li>')
+    """A list row: small picture on the left, text on the right."""
+    href = url(p["path"])
+    return (f'<article class="row"><a class="row-pic" href="{href}" tabindex="-1" aria-hidden="true">{img_tag(url(p["cover"]))}</a>'
+            f'<div class="row-body">{kicker(p)}<h3><a href="{href}">{e(p["title"])}</a></h3>'
+            f'<p class="dek">{e(p["summary"])}</p>{meta_line(p)}</div></article>')
 
 
-def post_list(posts, empty="No briefings here yet. New ones appear after they are approved."):
-    if not posts:
-        return f'<p class="empty">{e(empty)}</p>'
-    return '<ol class="rows">' + "".join(row(p) for p in posts) + "</ol>"
+def blog_card(b):
+    pic = (img_tag(b["image"], "", 800, 450) if b["image"]
+           else f'<span class="blog-noimg">{icon("pen", 28)}</span>')
+    label = b["labels"][0] if b["labels"] else "Blog"
+    return (f'<article class="card card-md"><a class="card-pic" href="{e(b["link"])}" rel="noopener" tabindex="-1" aria-hidden="true">{pic}</a>'
+            f'<div class="card-body"><span class="kicker t-blog">{e(label)}</span>'
+            f'<h3><a href="{e(b["link"])}" rel="noopener">{e(b["title"])}</a></h3>'
+            f'<p class="meta"><time datetime="{e(b["date"])}">{nice_date(b["date"]) if b["date"] else ""}</time><span class="ext">On our blog {icon("link", 13)}</span></p></div></article>')
 
 
+def section_head(title, tone, link=None, label="See all"):
+    more = f'<a class="more" href="{e(link)}">{e(label)} →</a>' if link else ""
+    return f'<div class="section-head {tone}"><h2>{e(title)}</h2>{more}</div>'
+
+
+def empty(msg):
+    return f'<p class="empty">{e(msg)}</p>'
+
+
+# ---------------------------------------------------------------- sidebar
+def sidebar(posts, skip_exploited=False):
+    parts = []
+    cves = [p for p in posts if p["category"] == "exploited-vulnerabilities"][:6]
+    if cves and not skip_exploited:
+        items = "".join(f'<li><a href="{url(p["path"])}"><span class="sev sev-{e(p.get("severity") or "unscored")}">{e(str(p.get("score") or "?"))}</span>'
+                        f'<span>{e(p.get("cve") or p["title"])}<small>{e((p.get("vendor", "") + " " + p.get("product", "")).strip())}</small></span></a></li>'
+                        for p in cves)
+        parts.append(f'<section class="widget t-exploit"><h2>Exploited right now</h2><ul class="cve-list">{items}</ul>'
+                     f'<a class="more" href="{url("/category/exploited-vulnerabilities/")}">All exploited vulnerabilities →</a></section>')
+    recap = [p for p in posts if p["category"] == "weekly-recap"][:1]
+    if recap:
+        r = recap[0]
+        parts.append(f'<section class="widget widget-recap"><p class="kicker-light">Weekly recap</p>'
+                     f'<h2><a href="{url(r["path"])}">{e(r["title"])}</a></h2><p>{e(r["summary"])}</p>'
+                     f'<a class="more" href="{url(r["path"])}">Read this week’s recap →</a></section>')
+    if social_channels():
+        parts.append(f'<section class="widget"><h2>Follow ZNexora Tech</h2>{social_pills("follow follow-compact")}</section>')
+    parts.append(f'<section class="widget widget-about"><a href="{url("/about/")}" tabindex="-1" aria-hidden="true">'
+                 f'{img_tag(url("/assets/cover-900.jpg"), "", 900, 600)}</a><h2>About ZNexora Tech</h2>'
+                 f'<p>{e(SITE.get("mission") or SITE["description"])}</p><a class="more" href="{url("/about/")}">Learn more →</a></section>')
+    sub = SITE.get("newsletter_url") or url("/feed.xml")
+    parts.append(f'<section class="widget widget-sub"><h2>Never miss an update</h2><p>Get new articles as soon as they are published.</p>'
+                 f'<a class="btn" href="{e(sub)}">{icon("bell", 16)}Subscribe</a></section>')
+    return '<aside class="sidebar">' + "".join(parts) + "</aside>"
+
+
+# ---------------------------------------------------------------- pages
 def write(path, content):
     target = OUT / path.lstrip("/")
     if path.endswith("/"):
@@ -255,165 +332,169 @@ def write(path, content):
     target.write_text(content, encoding="utf-8")
 
 
-def build_post(p, posts):
-    sev = p.get("severity")
-    facts = []
-    for label, key in [("CVE", "cve"), ("Vendor", "vendor"), ("Product", "product"), ("CVSS score", "score")]:
-        if p.get(key):
-            facts.append(f"<div><dt>{label}</dt><dd>{e(str(p[key]))}</dd></div>")
-    if sev:
-        facts.append(f"<div><dt>Severity</dt><dd>{e(SEV_LABEL.get(sev, sev))}</dd></div>")
-    if p.get("level"):
-        facts.append(f"<div><dt>Level</dt><dd>{e(p['level'])}</dd></div>")
-    if p["category"] in ("theory", "practical", "weekly-recap"):
-        facts.append(f"<div><dt>Reading time</dt><dd>{p['minutes']} min</dd></div>")
-    if p.get("source") and p.get("source_url", "").startswith("http"):
-        facts.append(f'<div><dt>Original report</dt><dd><a href="{e(p["source_url"])}" rel="noopener">{e(p["source"])}</a></dd></div>')
-    if p.get("ransomware", "").lower() == "known":
-        facts.append("<div><dt>Ransomware use</dt><dd>Reported by CISA</dd></div>")
-    meter = ""
-    if p.get("score"):
-        try:
-            v = max(0.0, min(10.0, float(p["score"])))
-            meter = (f'<div class="meter sev-{e(sev)}" role="img" aria-label="CVSS {v} out of 10">'
-                     f'<span style="width:{v * 10:.0f}%"></span></div>')
-        except ValueError:
-            pass
-    related = [x for x in posts if x["category"] == p["category"] and x["slug"] != p["slug"]][:3]
-    related_html = f'<section class="related"><h2>More {e(CATS.get(p["category"], "briefings")).lower()}</h2>{post_list(related)}</section>' if related else ""
-    share_url = urllib.parse.quote(BASE_URL + p["path"], safe="")
-    share_text = urllib.parse.quote(p["title"], safe="")
-    body = f"""<article class="post">
-  <figure class="cover"><img src="{url(p['cover'])}" alt="{e(p['cover_alt'])}" width="1200" height="630" decoding="async"></figure>
-  <header class="post-head">
-    <p class="crumb"><a href="{url('/category/' + p['category'] + '/')}">{e(CATS.get(p['category'], p['category']))}</a>
-    <time datetime="{e(p['date'])}">{nice_date(p['date'])}</time></p>
-    <h1>{e(p['title'])}</h1>
-    {f'<p class="lead">{e(p["summary"])}</p>' if p['summary'] else ''}
-    {meter}
-    {f'<dl class="facts">{"".join(facts)}</dl>' if facts else ''}
-  </header>
-  <div class="prose">{p['html']}</div>
-  <section class="thanks" aria-labelledby="thanks-title">
-    <h2 id="thanks-title">Thank you for reading!</h2>
-    <p>Let’s continue to build a safer and more trustworthy digital future together.</p>
-    <ul class="thanks-actions">
-      <li><a class="act t-news" href="https://www.linkedin.com/sharing/share-offsite/?url={share_url}" rel="noopener"><span class="act-ico">{icon("thumb")}</span><strong>Share</strong><span>on LinkedIn</span></a></li>
-      <li><a class="act t-recap" href="https://www.facebook.com/sharer/sharer.php?u={share_url}" rel="noopener"><span class="act-ico">{icon("share")}</span><strong>Share</strong><span>on Facebook</span></a></li>
-      <li><a class="act t-practical" href="https://t.me/share/url?url={share_url}&amp;text={share_text}" rel="noopener"><span class="act-ico">{icon("send")}</span><strong>Send</strong><span>on Telegram</span></a></li>
-      <li><a class="act t-theory" href="{e(SITE.get('newsletter_url') or url('/feed.xml'))}" rel="noopener"><span class="act-ico">{icon("bell")}</span><strong>Subscribe</strong><span>for new posts</span></a></li>
-    </ul>
-    {('<p class="thanks-follow">Follow ZNexora Tech</p>' + social_pills()) if social_channels() else ''}
-    <p class="thanks-motto">Stay curious. Stay secure. Stay ahead.</p>
-  </section>
-</article>
-{related_html}"""
-    write(p["path"], layout(p["title"], body, p["summary"], p["path"], "article", p["cover"]))
-
-
 def build_home(posts):
-    by = lambda *cats: [p for p in posts if p["category"] in cats]
-    recap = by("weekly-recap")[:1]
-    recap_html = ""
-    if recap:
-        r = recap[0]
-        recap_html = f"""<section class="recap-feature">
-  <a class="recap-art" href="{url(r['path'])}" tabindex="-1" aria-hidden="true"><img src="{url(r['cover'])}" alt="" width="1200" height="630" loading="lazy"></a>
-  <p class="recap-kicker">This week in security</p>
-  <h2><a href="{url(r['path'])}">{e(r['title'])}</a></h2>
-  <p>{e(r['summary'])}</p>
-  <a class="recap-link" href="{url(r['path'])}">Read the weekly recap</a>
-</section>"""
-
-    def block(title, items, link, empty, tone):
-        return (f'<section class="{tone}"><div class="section-head"><h2>{e(title)}</h2>'
-                f'<a href="{url(link)}">See all</a></div>{post_list(items, empty)}</section>')
-
+    lead, rest = (posts[0], posts[1:]) if posts else (None, [])
+    top = ""
+    if lead:
+        latest = "".join(f'<li>{kicker(p)}<a href="{url(p["path"])}">{e(p["title"])}</a>'
+                         f'<time datetime="{e(p["date"])}">{nice_date(p["date"])}</time></li>' for p in posts[1:7])
+        top = (f'<section class="top-grid"><article class="lead">'
+               f'<a class="lead-pic" href="{url(lead["path"])}" tabindex="-1" aria-hidden="true">{img_tag(url(lead["cover"]), "", lazy=False)}</a>'
+               f'{kicker(lead)}<h1 class="lead-title"><a href="{url(lead["path"])}">{e(lead["title"])}</a></h1>'
+               f'<p class="dek">{e(lead["summary"])}</p>{meta_line(lead)}</article>'
+               f'<aside class="latest-rail"><h2>Latest</h2><ol>{latest or "<li>New stories appear here once approved.</li>"}</ol></aside></section>')
+    else:
+        top = f'<section class="welcome"><h1>{e(SITE["tagline"])}</h1><p>{e(SITE["description"])}</p></section>'
+    trio = rest[:3]
+    trio_html = f'<section class="card-row">{"".join(card(p) for p in trio)}</section>' if trio else ""
+    used = {p["slug"] for p in ([lead] if lead else []) + trio}
+    news = [p for p in posts if p["slug"] not in used and p["category"] in ("news", "exploited-vulnerabilities", "weekly-recap")][:8]
+    learn = [p for p in posts if p["category"] in ("theory", "practical")][:5]
+    learn_html = ""
+    if learn:
+        learn_html = (section_head("Learn: theory & practical", "t-theory", url("/learn/"))
+                      + f'<div class="learn-grid">{card(learn[0], "lg")}<div class="learn-list">{"".join(row(p) for p in learn[1:5])}</div></div>')
+    blog_html = ""
+    if BLOG:
+        blog_html = (section_head("From the ZNexora Blog", "t-blog", url("/blog/"), "More from the blog")
+                     + f'<div class="card-grid">{"".join(blog_card(b) for b in BLOG[:4])}</div>')
     community = ""
     if social_channels():
         community = (f'<section class="community"><div><h2>Join the ZNexora community</h2>'
                      f'<p>Daily security news, tips and guides on your favourite platform.</p></div>{social_pills()}</section>')
-
-    pillars = "".join(
-        f'<li><a class="pillar {TONE[c]}" href="{url(link)}"><span class="pillar-ico">{icon(c, 26)}</span>'
-        f'<strong>{e(name)}</strong><span>{e(text)}</span></a></li>' for c, link, name, text in PILLARS)
-
-    body = f"""<section class="hero">
-  <figure class="hero-cover"><picture>
-    <source media="(max-width: 700px)" srcset="{url('/assets/cover-900.jpg')}">
-    <img src="{url('/assets/cover.jpg')}" width="1536" height="1024" fetchpriority="high"
-      alt="ZNexora Tech cover: Empowering minds. Securing futures. Cyber security, IT knowledge, AI and automation, cloud technologies and practical solutions.">
-  </picture></figure>
-  <div class="hero-intro">
-    <h1>{e(SITE['tagline'])}</h1>
-    <p>{e(SITE['description'])}</p>
+    body = f"""{top}
+{trio_html}
+<div class="with-sidebar">
+  <div class="main-col">
+    {section_head("Latest cybersecurity news", "t-news", url("/posts/"))}
+    <div class="rows">{"".join(row(p) for p in news) or empty("The latest stories appear here once they are approved.")}</div>
+    {learn_html}
+    {blog_html}
   </div>
-  <ul class="pillars">{pillars}</ul>
-</section>
-{recap_html}
-{community}
-<div class="home-grid">
-  <div>
-    {block("Latest news", by("news")[:6], "/category/news/", "The latest stories appear here once they are approved.", "t-news")}
-    {block("Exploited vulnerabilities", by("exploited-vulnerabilities")[:5], "/category/exploited-vulnerabilities/", "New exploited vulnerabilities appear here once they are approved.", "t-exploit")}
-  </div>
-  <div>
-    {block("Learn: theory and practice", by("theory", "practical")[:6], "/learn/", "Theory articles and practical guides appear here once they are approved.", "t-theory")}
-  </div>
-</div>"""
+  {sidebar(posts)}
+</div>
+{community}"""
     write("/", layout(SITE["name"], body))
 
 
-BANNER_TEXT = {
-    "news": "The security stories that matter, in plain language.",
-    "weekly-recap": "Every Monday: news, ransomware and web defacement in one read.",
-    "exploited-vulnerabilities": "Vulnerabilities attackers are using right now.",
-    "theory": "Security concepts, clearly explained.",
-    "practical": "Hands-on guides for defending your systems.",
-}
+def build_post(p, posts):
+    facts = []
+    for label, key in [("CVE", "cve"), ("Vendor", "vendor"), ("Product", "product"), ("CVSS score", "score")]:
+        if p.get(key):
+            facts.append(f"<div><dt>{label}</dt><dd>{e(str(p[key]))}</dd></div>")
+    if p.get("severity") and p["category"] == "exploited-vulnerabilities":
+        facts.append(f"<div><dt>Severity</dt><dd>{e(SEV_LABEL.get(p['severity'], p['severity']))}</dd></div>")
+    if p.get("ransomware", "").lower() == "known":
+        facts.append("<div><dt>Ransomware use</dt><dd>Reported by CISA</dd></div>")
+    if p.get("level"):
+        facts.append(f"<div><dt>Level</dt><dd>{e(p['level'])}</dd></div>")
+    if p.get("source") and p.get("source_url", "").startswith("http"):
+        facts.append(f'<div><dt>Original report</dt><dd><a href="{e(p["source_url"])}" rel="noopener">{e(p["source"])}</a></dd></div>')
+    keypoints = ""
+    if p["summary"] or facts:
+        keypoints = (f'<section class="keypoints {TONE.get(p["category"], "")}"><h2>Key points</h2>'
+                     f'{"<p>" + e(p["summary"]) + "</p>" if p["summary"] else ""}'
+                     f'{"<dl class=facts>" + "".join(facts) + "</dl>" if facts else ""}</section>')
+    tags = [f'<a class="tag {TONE.get(p["category"], "")}" href="{url("/category/" + p["category"] + "/")}">{e(CATS.get(p["category"], p["category"]))}</a>']
+    tags += [f'<span class="tag">{e(t)}</span>' for t in p["tag_list"][:5]]
+    share_url = urllib.parse.quote(BASE_URL + p["path"], safe="")
+    share_text = urllib.parse.quote(p["title"], safe="")
+    shares = [("LinkedIn", f"https://www.linkedin.com/sharing/share-offsite/?url={share_url}", "briefcase"),
+              ("Facebook", f"https://www.facebook.com/sharer/sharer.php?u={share_url}", "people"),
+              ("WhatsApp", f"https://wa.me/?text={share_text}%20{share_url}", "chat"),
+              ("Telegram", f"https://t.me/share/url?url={share_url}&text={share_text}", "send")]
+    share_html = "".join(f'<li><a href="{e(h)}" rel="noopener" target="_blank" aria-label="Share on {n}">{icon(i, 18)}<span>{n}</span></a></li>'
+                         for n, h, i in shares)
+    toc = ""
+    if len(p["toc"]) >= 2:
+        toc = '<nav class="toc" aria-label="On this page"><h2>On this page</h2><ol>' + "".join(
+            f'<li><a href="#{e(i)}">{e(n)}</a></li>' for i, n in p["toc"]) + "</ol></nav>"
+    related = [x for x in posts if x["category"] == p["category"] and x["slug"] != p["slug"]][:3]
+    if len(related) < 3:
+        related += [x for x in posts if x["slug"] != p["slug"] and x not in related][:3 - len(related)]
+    related_html = (section_head("Related content", "t-news") + f'<div class="card-row">{"".join(card(x) for x in related)}</div>') if related else ""
+    thanks = f"""<section class="thanks" aria-labelledby="thanks-title">
+  <h2 id="thanks-title">Thank you for reading!</h2>
+  <p>Let’s continue to build a safer and more trustworthy digital future together.</p>
+  {('<p class="thanks-follow">Follow ZNexora Tech</p>' + social_pills()) if social_channels() else ''}
+  <p class="thanks-motto">Stay curious. Stay secure. Stay ahead.</p>
+</section>"""
+    body = f"""<div class="article-layout">
+<article class="article">
+  <header class="article-head">
+    <p class="crumbs"><a href="{url('/')}">Home</a> <span aria-hidden="true">/</span> <a href="{url('/category/' + p['category'] + '/')}">{e(CATS.get(p['category'], p['category']))}</a></p>
+    <h1>{e(p['title'])}</h1>
+    <p class="byline">By <strong>{e(p.get('author') or SITE.get('author') or SITE['name'])}</strong>
+      <span class="dot" aria-hidden="true"></span><time datetime="{e(p['date'])}">{nice_date(p['date'], True)}</time>
+      <span class="dot" aria-hidden="true"></span>{p['minutes']} min read</p>
+    <div class="tags">{"".join(tags)}</div>
+  </header>
+  {keypoints}
+  <figure class="article-cover">{img_tag(url(p['cover']), p['cover_alt'], lazy=False)}</figure>
+  <div class="prose">{p['html']}</div>
+  <section class="share-bottom"><h2>Share this article</h2><ul class="share-list">{share_html}</ul></section>
+  {thanks}
+</article>
+<aside class="article-aside">
+  <div class="aside-sticky">
+    <section class="share-side"><h2>Share</h2><ul class="share-list">{share_html}</ul></section>
+    {toc}
+  </div>
+</aside>
+</div>
+<section class="related">{related_html}</section>"""
+    write(p["path"], layout(p["title"], body, p["summary"], p["path"], "article", p["cover"]))
 
 
-def banner(key, title, category, subtitle=""):
-    """Make (once) and return the graphic for a section page."""
-    rel = f"/covers/section-{key}.jpg"
-    make_cover(OUT / rel.lstrip("/"), title, category, subtitle=subtitle, key="section-" + key)
-    return rel
-
-
-def list_page(path, title, items, key, category, subtitle):
-    img = banner(key, title, category, subtitle)
-    body = (f'<figure class="banner"><img src="{url(img)}" alt="" width="1200" height="630" decoding="async"></figure>'
-            f'<h1 class="visually-hidden">{e(title)}</h1>{post_list(items)}')
-    write(path, layout(title, body, f"{title}: {subtitle}", path, image=img))
+def list_page(path, title, intro, items, tone, posts, image=None):
+    body = f"""<header class="page-head {tone}"><p class="kicker {tone}">Section</p><h1>{e(title)}</h1><p>{e(intro)}</p></header>
+<div class="with-sidebar">
+  <div class="main-col"><div class="rows">{"".join(row(p) for p in items) or empty("Articles appear here once they are approved.")}</div></div>
+  {sidebar(posts, skip_exploited=(tone == "t-exploit"))}
+</div>"""
+    write(path, layout(title, body, f"{title}: {intro}", path, image=image or "/assets/og-image.jpg"))
 
 
 def build_lists(posts):
-    learn = [p for p in posts if p["category"] in ("theory", "practical")]
-    list_page("/learn/", "Learn: theory and practice", learn, "learn", "theory", "Concepts and hands-on guides for defenders.")
-    list_page("/posts/", "All posts", posts, "all", "news", "Everything published on ZNexora Tech.")
+    list_page("/posts/", "All articles", "Everything published on ZNexora Tech, newest first.", posts, "t-news", posts)
+    list_page("/learn/", "Learn: theory & practical", "Concepts and hands-on guides for defenders.",
+              [p for p in posts if p["category"] in ("theory", "practical")], "t-theory", posts)
     for slug, name in CATS.items():
-        list_page(f"/category/{slug}/", name, [p for p in posts if p["category"] == slug], slug, slug,
-                  BANNER_TEXT.get(slug, ""))
+        list_page(f"/category/{slug}/", name, CAT_INTRO.get(slug, ""), [p for p in posts if p["category"] == slug],
+                  TONE.get(slug, "t-news"), posts)
+
+
+def build_blog_page(posts):
+    home = blog_home()
+    if not home.startswith("https://"):
+        return
+    grid = "".join(blog_card(b) for b in BLOG) or empty("Our latest blog posts will appear here shortly.")
+    body = f"""<header class="page-head t-blog"><p class="kicker t-blog">Blog</p><h1>The ZNexora Blog</h1>
+<p>In-depth guides, awareness articles and security insights from our team.</p>
+<a class="btn" href="{e(home)}" rel="noopener">{icon("pen", 16)}Visit the full blog</a></header>
+<div class="card-grid card-grid-3">{grid}</div>"""
+    write("/blog/", layout("Blog", body, "In-depth guides and security insights from the ZNexora Tech blog.", "/blog/"))
 
 
 def build_pages():
     for path in PAGES_DIR.glob("*.md"):
         meta, body = parse_front_matter(path.read_text(encoding="utf-8"))
         title = meta.get("title", path.stem.title())
-        figure, img = "", "/assets/og-image.jpg"
+        content, _ = render_md(body)
+        figure = follow = ""
         if path.stem == "about":
-            img = "/assets/og-image.jpg"
-            figure = f'<figure class="cover"><img src="{url(img)}" alt="ZNexora Tech logo" width="1200" height="630"></figure>'
-        follow = ""
-        if path.stem == "about" and social_channels():
-            follow = '<section class="about-follow"><h2>Follow ZNexora Tech</h2>' + social_pills() + '</section>'
-        write(f"/{path.stem}/", layout(title, f'<article class="post">{figure}<h1 class="page-title">{e(title)}</h1>'
-                                              f'<div class="prose">{render_md(body)}</div>{follow}</article>', path=f"/{path.stem}/", image=img))
+            figure = f'<figure class="article-cover">{img_tag(url("/assets/cover.jpg"), "ZNexora Tech: Empowering minds. Securing futures.", 1536, 1024, False)}</figure>'
+            if social_channels():
+                follow = '<section class="about-follow"><h2>Follow ZNexora Tech</h2>' + social_pills() + '</section>'
+        body_html = (f'<article class="article article-page"><header class="article-head"><h1>{e(title)}</h1></header>'
+                     f'{figure}<div class="prose">{content}</div>{follow}</article>')
+        write(f"/{path.stem}/", layout(title, body_html, path=f"/{path.stem}/"))
 
 
 def build_feeds(posts):
     index = [{"t": p["title"], "u": url(p["path"]), "s": p["summary"], "c": p.get("cve", ""),
               "v": f'{p.get("vendor", "")} {p.get("product", "")}'} for p in posts]
+    index += [{"t": b["title"], "u": b["link"], "s": b["excerpt"], "c": "", "v": "blog"} for b in BLOG]
     (OUT / "search-index.json").write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
 
     def rfc822(iso):
@@ -427,8 +508,7 @@ def build_feeds(posts):
 <description>{e(SITE['description'])}</description><language>{e(SITE.get('language', 'en'))}</language>
 {items}</channel></rss>
 """, encoding="utf-8")
-
-    pages = ["/", "/posts/", "/learn/"] + [f"/category/{s}/" for s in CATS] + [p["path"] for p in posts]
+    pages = ["/", "/posts/", "/learn/", "/blog/", "/about/"] + [f"/category/{s}/" for s in CATS] + [p["path"] for p in posts]
     urls = "".join(f"<url><loc>{BASE_URL}{u}</loc></url>" for u in pages)
     (OUT / "sitemap.xml").write_text(f'<?xml version="1.0" encoding="UTF-8"?>\n'
                                      f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
@@ -436,10 +516,12 @@ def build_feeds(posts):
 
 
 def main():
+    global BLOG
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
     shutil.copytree(ROOT / "assets", OUT / "assets")
+    BLOG = read_blog(SITE)
     posts = load_posts()
     for p in posts:
         if not p["own_image"]:
@@ -450,10 +532,11 @@ def main():
         build_post(p, posts)
     build_home(posts)
     build_lists(posts)
+    build_blog_page(posts)
     build_pages()
     build_feeds(posts)
-    write("/404.html", layout("Page not found", '<h1 class="page-title">Page not found</h1>'
-                                                f'<p>This page does not exist. <a href="{url("/")}">Go to the latest briefings</a> or search above.</p>'))
+    write("/404.html", layout("Page not found", '<header class="page-head"><h1>Page not found</h1>'
+                                                f'<p>This page does not exist. <a href="{url("/")}">Go to the latest news</a> or search above.</p></header>'))
     (OUT / ".nojekyll").write_text("")
     if SITE.get("custom_domain"):
         (OUT / "CNAME").write_text(SITE["custom_domain"].strip() + "\n")

@@ -194,6 +194,10 @@ Every post automatically gets an original ZNexora Tech graphic in your logo's st
 
 Only use photos you took or made yourself, or have a licence to use. Do not copy photos from news websites.
 
+## Your Blogger blog
+
+The site reads your Blogger blog automatically (from the "Blog" link in the `social` section of `site.json`) and shows your newest blog posts, with their images, on the home page and on a **Blog** page in the menu. Each one links to the full post on your blog. The site refreshes every 6 hours, so new blog posts appear without any action from you.
+
 ## Design and social links
 
 The site uses a white, professional design with a color for each section (blue for news, violet for the weekly recap, rose for exploited vulnerabilities, magenta for theory, teal for practical guides). Your cover photo is the home page banner (`assets/cover.jpg`), the flat logo is in the header (`assets/logo-light.png`), and dark mode switches to the glowing logo automatically. Every post ends with a "Thank you for reading!" card with share and subscribe buttons.

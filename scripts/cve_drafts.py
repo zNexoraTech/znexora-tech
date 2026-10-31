@@ -103,7 +103,9 @@ def main():
         meta = {"title": title, "date": today().isoformat(), "category": "exploited-vulnerabilities",
                 "summary": summary, "cve": item["cve"], "vendor": item["vendor"], "product": item["product"],
                 "score": item.get("score") or "", "severity": severity_from_score(item.get("score")),
-                "ransomware": item["ransomware"], "drafted_by": "ai" if ai else "template"}
+                "ransomware": item["ransomware"], "drafted_by": "ai" if ai else "template",
+                "tags": ", ".join(t for t in [item["vendor"], "Actively exploited",
+                                              "Ransomware" if item["ransomware"].lower() == "known" else ""] if t)}
         slug = slugify(f"{item['cve']} {item['vendor']} {item['product']}")
         pr = (f"New exploited-vulnerability briefing ({'AI draft' if ai else 'free template'}).\n\n"
               f"Check before approving:\n- [ ] CVE, vendor and product match the sources\n- [ ] Nothing is invented\n\n"
