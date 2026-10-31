@@ -2,12 +2,22 @@
   "name": "ZNexora Tech",
   "tagline": "Navigate the future securely.",
   "description": "Cybersecurity news, weekly threat recaps, and theory and practical guides to help organizations navigate the future securely.",
-  "url": "https://zNexoraTech.github.io/znexora-tech",
+  "url": "https://znexoratech.github.io/znexora-tech",
   "custom_domain": "",
   "language": "en",
   "author": "ZNexora Tech",
   "contact_email": "aicreativestudio.777@gmail.com",
   "newsletter_url": "",
+  "social": {
+    "Facebook": "https://www.facebook.com/ZNexoraTech/",
+    "Instagram": "https://www.instagram.com/znexoratech/",
+    "TikTok": "https://www.tiktok.com/@znexoratech",
+    "YouTube": "https://www.youtube.com/@ZNexoraTech",
+    "WhatsApp": "https://whatsapp.com/channel/0029Vb8onj13rZZYrALS6N12",
+    "Telegram": "https://t.me/znexoratech",
+    "Blog": "https://znexora-tech.blogspot.com/",
+    "LinkedIn": "https://www.linkedin.com/company/znexora-tech/"
+  },
   "categories": {
     "news": "Latest news",
     "weekly-recap": "Weekly recap",
