@@ -893,6 +893,26 @@
   "summary": "[...]",
   "date": "2026-10-31T13:10:19+00:00",
   "tags": [],
-  "drafted": false
+  "drafted": true
+ },
+ "845cf24b8961170f": {
+  "title": "New Android SMS of Death exploit can remotely crash unpatched phones",
+  "link": "https://www.bleepingcomputer.com/news/security/new-android-sms-of-death-exploit-can-remotely-crash-unpatched-phones/",
+  "source": "BleepingComputer",
+  "summary": "A security researcher has released a proof-of-concept exploit for a recently patched Android vulnerability, dubbed \"SMS of Death\" and tracked as CVE-2026-58882, that lets attackers remotely disrupt cellular service or crash phones by sending a specially crafted text message. [...]",
+  "date": "2026-10-31T15:35:11+00:00",
+  "tags": [
+   "vulnerability"
+  ],
+  "drafted": true
+ },
+ "b35f9e575d4ba903": {
+  "title": "Reddit to lock content behind logins to fight scrapers",
+  "link": "https://www.bleepingcomputer.com/news/security/reddit-to-lock-content-behind-logins-to-fight-scrapers/",
+  "source": "BleepingComputer",
+  "summary": "Reddit announced in a post by co-founder Steve Huffman that the site will gradually become a \"logged-in service,\" offering limited access to visitors without accounts. [...]",
+  "date": "2026-10-31T14:05:15+00:00",
+  "tags": [],
+  "drafted": true
  }
 }
