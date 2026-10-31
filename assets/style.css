@@ -122,6 +122,9 @@ h1 a:hover, h2 a:hover, h3 a:hover { color: var(--link); text-decoration: underl
 .more:hover { text-decoration: underline; }
 
 /* ---------- Home ---------- */
+.home-banner { display: block; line-height: 0; margin: 0 0 1.9rem; border-radius: 14px; overflow: hidden; background: var(--navy); box-shadow: 0 14px 34px rgba(11, 26, 58, .16); }
+.home-banner img { width: 100%; height: auto; display: block; }
+@media (max-width: 560px) { .home-banner { border-radius: 10px; margin-bottom: 1.4rem; } }
 .top-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; padding-bottom: 1.75rem; border-bottom: 1px solid var(--line); }
 @media (min-width: 960px) { .top-grid { grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); } }
 .lead-pic { margin-bottom: 1rem; }

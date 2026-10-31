@@ -37,6 +37,7 @@ CAT_INTRO = {
 }
 BLOG = []
 ABOUT_IMG = "/assets/cover-900.jpg"
+HAS_BANNER = False
 e = html.escape
 
 
@@ -365,7 +366,15 @@ def build_home(posts):
     if social_channels():
         community = (f'<section class="community"><div><h2>Join the ZNexora community</h2>'
                      f'<p>Daily security news, tips and guides on your favourite platform.</p></div>{social_pills()}</section>')
-    body = f"""{top}
+    banner = ""
+    if HAS_BANNER:
+        banner = (f'<a class="home-banner" href="{url("/about/")}"><picture>'
+                  f'<source media="(max-width: 700px)" srcset="{url("/assets/cover-banner-900.jpg")}">'
+                  f'<img src="{url("/assets/cover-banner.jpg")}" width="1536" height="705" fetchpriority="high" '
+                  f'alt="ZNexora Tech. Empowering minds. Securing futures. Your trusted hub for technology, security and innovation: '
+                  f'cyber security, IT knowledge, AI and automation, cloud technologies and practical solutions."></picture></a>')
+    body = f"""{banner}
+{top}
 {trio_html}
 <div class="with-sidebar">
   <div class="main-col">
@@ -541,6 +550,27 @@ def ensure_cover_images():
     return ""
 
 
+def ensure_banner():
+    """The wide home-page banner. Created from cover.jpg if the banner files are missing."""
+    from PIL import Image
+    assets = OUT / "assets"
+    big, small = assets / "cover-banner.jpg", assets / "cover-banner-900.jpg"
+    if not big.is_file():
+        src = next((assets / n for n in ("cover.jpg", "cover.png") if (assets / n).is_file()), None)
+        if not src:
+            print("No cover picture found; the home banner is hidden.")
+            return False
+        im = Image.open(src).convert("RGB")
+        w, h = im.size
+        im = im.crop((0, round(h * 40 / 1024), w, round(h * 745 / 1024)))  # keep logo, slogan and pillars
+        im.save(big, quality=84, optimize=True, progressive=True)
+        print(f"Created assets/cover-banner.jpg from {src.name}")
+    if not small.is_file():
+        im = Image.open(big)
+        im.resize((900, round(900 * im.height / im.width)), Image.LANCZOS).save(small, quality=82, optimize=True, progressive=True)
+    return True
+
+
 def fill_missing_scores(posts):
     """Look up scores that were not published when a briefing was written (official CVE record)."""
     from cve_drafts import cve_record_score
@@ -557,12 +587,13 @@ def fill_missing_scores(posts):
 
 
 def main():
-    global BLOG, ABOUT_IMG
+    global BLOG, ABOUT_IMG, HAS_BANNER
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
     shutil.copytree(ROOT / "assets", OUT / "assets")
     ABOUT_IMG = ensure_cover_images()
+    HAS_BANNER = ensure_banner()
     BLOG = read_blog(SITE)
     posts = load_posts()
     try:
