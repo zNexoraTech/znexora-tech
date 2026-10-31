@@ -71,6 +71,67 @@ def nice_date(iso):
         return iso
 
 
+ICON = {
+    "news": '<path d="M4 5h13v14H6a2 2 0 0 1-2-2V5Z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 9h7M7 12h7M7 15h4"/>',
+    "weekly-recap": '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M12 14h2M16 14h.5M8 17h2M12 17h2"/>',
+    "exploited-vulnerabilities": '<path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6L12 3Z"/><path d="M12 8v5M12 16h.01"/>',
+    "theory": '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z"/>',
+    "practical": '<path d="M14.5 6.5a4 4 0 0 0-5.3 5.3l-5 5a1.7 1.7 0 0 0 2.4 2.4l5-5a4 4 0 0 0 5.3-5.3l-2.5 2.5-2.4-.4-.4-2.4 2.9-2.1Z"/>',
+    "share": '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"/>',
+    "send": '<path d="M21 3 3 10.5l7 2.5 2.5 7L21 3Z"/><path d="m10 13 4.5-4.5"/>',
+    "bell": '<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    "people": '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>',
+    "camera": '<rect x="3" y="6.5" width="18" height="13" rx="3"/><path d="M8.5 6.5 10 4h4l1.5 2.5"/><circle cx="12" cy="13" r="3.5"/>',
+    "music": '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+    "play": '<rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3V9Z"/>',
+    "chat": '<path d="M4 19.5 5.3 16A8 8 0 1 1 8.6 19L4 19.5Z"/><path d="M9 10.5h6M9 13.5h4"/>',
+    "pen": '<path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
+    "briefcase": '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/>',
+    "link": '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    "thumb": '<path d="M7 11v9H4v-9h3Z"/><path d="M7 11l4-7a2 2 0 0 1 2 2.3L12.5 10H18a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7"/>',
+}
+
+
+def icon(name, size=24):
+    return (f'<svg class="ico" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            f'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICON[name]}</svg>')
+
+
+CHANNEL = {  # label in site.json "social" -> (icon, color tone)
+    "facebook": ("people", "t-news"), "instagram": ("camera", "t-theory"), "tiktok": ("music", "t-exploit"),
+    "youtube": ("play", "t-exploit"), "whatsapp": ("chat", "t-practical"), "telegram": ("send", "t-news"),
+    "blog": ("pen", "t-recap"), "linkedin": ("briefcase", "t-news"),
+}
+
+
+def social_channels():
+    """Your channels from site.json, in the order written there (only full https:// links)."""
+    out = []
+    for label, link in (SITE.get("social") or {}).items():
+        link = str(link).strip()
+        if link.startswith("https://"):
+            ico, tone = CHANNEL.get(label.lower(), ("link", "t-recap"))
+            out.append((label, link, ico, tone))
+    return out
+
+
+def social_pills(cls="follow"):
+    items = "".join(f'<li><a class="chan {tone}" href="{e(link)}" rel="noopener" target="_blank">'
+                    f'<span class="chan-ico">{icon(ico, 18)}</span>{e(label)}</a></li>'
+                    for label, link, ico, tone in social_channels())
+    return f'<ul class="{cls}">{items}</ul>' if items else ""
+
+
+PILLARS = [
+    ("news", "/category/news/", "Latest news", "Today’s security stories, explained in plain language."),
+    ("weekly-recap", "/category/weekly-recap/", "Weekly recap", "Every Monday: news, ransomware and web defacement."),
+    ("exploited-vulnerabilities", "/category/exploited-vulnerabilities/", "Exploited vulnerabilities", "What attackers are using right now, and how to patch."),
+    ("theory", "/category/theory/", "Theory", "Security concepts made clear, from basics to advanced."),
+    ("practical", "/category/practical/", "Practical guides", "Hands-on steps to protect real systems."),
+]
+TONE = {"news": "t-news", "weekly-recap": "t-recap", "exploited-vulnerabilities": "t-exploit", "theory": "t-theory", "practical": "t-practical"}
+
+
 def layout(title, body, description="", path="/", og_type="website", image="/assets/og-image.jpg"):
     full_title = title if title == SITE["name"] else f"{title} | {SITE['name']}"
     desc = description or SITE["description"]
@@ -82,6 +143,8 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
     subscribe = (f'<a class="subscribe" href="{e(SITE["newsletter_url"])}" rel="noopener">Get the email briefing</a>'
                  if SITE.get("newsletter_url") else "")
     year = dt.date.today().year
+    social = "".join(f'<li><a class="foot-chan" href="{e(link)}" rel="noopener" target="_blank">{icon(ico, 16)}{e(label)}</a></li>'
+                     for label, link, ico, tone in social_channels())
     return f"""<!doctype html>
 <html lang="{e(SITE.get('language', 'en'))}">
 <head>
@@ -117,7 +180,7 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <a class="skip" href="#main">Skip to content</a>
 <header class="masthead">
   <div class="wrap masthead-row">
-    <a class="brand" href="{url('/')}"><img src="{url('/assets/logo.png')}" alt="{e(SITE['name'])}" width="347" height="184"></a>
+    <a class="brand" href="{url('/')}"><img class="logo-on-light" src="{url('/assets/logo-light.png')}" alt="{e(SITE['name'])}" width="379" height="120"><img class="logo-on-dark" src="{url('/assets/logo.png')}" alt="{e(SITE['name'])}" width="347" height="184"></a>
     <div class="tools">
       <div class="search">
         <label class="visually-hidden" for="search-input">Search briefings</label>
@@ -130,14 +193,24 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
     </div>
   </div>
   <nav class="wrap catnav" aria-label="Categories">{nav_link("/posts/", "All posts")}{nav}</nav>
+  <div class="color-strip" aria-hidden="true"></div>
 </header>
 <main id="main" class="wrap">
 {body}
 </main>
 <footer class="footer">
-  <div class="wrap footer-row">
-    <p class="mission">{e(SITE.get('mission') or SITE['description'])}</p>
-    <p class="footer-links">{subscribe}<a href="{url('/feed.xml')}">RSS</a><a href="{url('/about/')}">About</a><a href="{url('/privacy/')}">Privacy</a></p>
+  <div class="color-strip" aria-hidden="true"></div>
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <img src="{url('/assets/logo.png')}" alt="{e(SITE['name'])}" width="347" height="184" loading="lazy">
+      <p class="mission">{e(SITE.get('mission') or SITE['description'])}</p>
+    </div>
+    <nav aria-label="Sections"><h2>Explore</h2><ul>{"".join(f'<li><a href="{url("/category/" + s + "/")}">{e(n)}</a></li>' for s, n in CATS.items())}</ul></nav>
+    <div><h2>Follow us</h2><ul class="foot-follow">{social}<li><a class="foot-chan" href="{url('/feed.xml')}">{icon("bell", 16)}RSS feed</a></li>{('<li>' + subscribe + '</li>') if subscribe else ''}</ul>
+      <h2 class="foot-more">More</h2><ul><li><a href="{url('/about/')}">About</a></li><li><a href="{url('/privacy/')}">Privacy</a></li></ul></div>
+  </div>
+  <div class="wrap footer-bottom">
+    <p class="motto"><span>Stay curious.</span> <span>Stay secure.</span> <span>Stay ahead.</span></p>
     <p class="fine">© {year} {e(SITE['name'])}. Content summarises public sources. Always confirm details with the vendor or original report.</p>
   </div>
 </footer>
@@ -221,11 +294,18 @@ def build_post(p, posts):
     {f'<dl class="facts">{"".join(facts)}</dl>' if facts else ''}
   </header>
   <div class="prose">{p['html']}</div>
-  <p class="share">Share:
-    <a href="https://bsky.app/intent/compose?text={share_text}%20{share_url}" rel="noopener">Bluesky</a>
-    <a href="https://www.linkedin.com/sharing/share-offsite/?url={share_url}" rel="noopener">LinkedIn</a>
-    <a href="https://t.me/share/url?url={share_url}&amp;text={share_text}" rel="noopener">Telegram</a>
-  </p>
+  <section class="thanks" aria-labelledby="thanks-title">
+    <h2 id="thanks-title">Thank you for reading!</h2>
+    <p>Let’s continue to build a safer and more trustworthy digital future together.</p>
+    <ul class="thanks-actions">
+      <li><a class="act t-news" href="https://www.linkedin.com/sharing/share-offsite/?url={share_url}" rel="noopener"><span class="act-ico">{icon("thumb")}</span><strong>Share</strong><span>on LinkedIn</span></a></li>
+      <li><a class="act t-recap" href="https://www.facebook.com/sharer/sharer.php?u={share_url}" rel="noopener"><span class="act-ico">{icon("share")}</span><strong>Share</strong><span>on Facebook</span></a></li>
+      <li><a class="act t-practical" href="https://t.me/share/url?url={share_url}&amp;text={share_text}" rel="noopener"><span class="act-ico">{icon("send")}</span><strong>Send</strong><span>on Telegram</span></a></li>
+      <li><a class="act t-theory" href="{e(SITE.get('newsletter_url') or url('/feed.xml'))}" rel="noopener"><span class="act-ico">{icon("bell")}</span><strong>Subscribe</strong><span>for new posts</span></a></li>
+    </ul>
+    {('<p class="thanks-follow">Follow ZNexora Tech</p>' + social_pills()) if social_channels() else ''}
+    <p class="thanks-motto">Stay curious. Stay secure. Stay ahead.</p>
+  </section>
 </article>
 {related_html}"""
     write(p["path"], layout(p["title"], body, p["summary"], p["path"], "article", p["cover"]))
@@ -245,28 +325,40 @@ def build_home(posts):
   <a class="recap-link" href="{url(r['path'])}">Read the weekly recap</a>
 </section>"""
 
-    def block(title, items, link, empty):
-        return (f'<section><div class="section-head"><h2>{e(title)}</h2>'
+    def block(title, items, link, empty, tone):
+        return (f'<section class="{tone}"><div class="section-head"><h2>{e(title)}</h2>'
                 f'<a href="{url(link)}">See all</a></div>{post_list(items, empty)}</section>')
 
+    community = ""
+    if social_channels():
+        community = (f'<section class="community"><div><h2>Join the ZNexora community</h2>'
+                     f'<p>Daily security news, tips and guides on your favourite platform.</p></div>{social_pills()}</section>')
+
+    pillars = "".join(
+        f'<li><a class="pillar {TONE[c]}" href="{url(link)}"><span class="pillar-ico">{icon(c, 26)}</span>'
+        f'<strong>{e(name)}</strong><span>{e(text)}</span></a></li>' for c, link, name, text in PILLARS)
+
     body = f"""<section class="hero">
-  <h1>{e(SITE['tagline'])}</h1>
-  <p>{e(SITE['description'])}</p>
-  <ul class="hero-topics">
-    <li><a href="{url('/category/news/')}">Latest news</a></li>
-    <li><a href="{url('/category/weekly-recap/')}">Weekly recap</a></li>
-    <li><a href="{url('/category/exploited-vulnerabilities/')}">Exploited vulnerabilities</a></li>
-    <li><a href="{url('/learn/')}">Theory and practice</a></li>
-  </ul>
+  <figure class="hero-cover"><picture>
+    <source media="(max-width: 700px)" srcset="{url('/assets/cover-900.jpg')}">
+    <img src="{url('/assets/cover.jpg')}" width="1536" height="1024" fetchpriority="high"
+      alt="ZNexora Tech cover: Empowering minds. Securing futures. Cyber security, IT knowledge, AI and automation, cloud technologies and practical solutions.">
+  </picture></figure>
+  <div class="hero-intro">
+    <h1>{e(SITE['tagline'])}</h1>
+    <p>{e(SITE['description'])}</p>
+  </div>
+  <ul class="pillars">{pillars}</ul>
 </section>
 {recap_html}
+{community}
 <div class="home-grid">
   <div>
-    {block("Latest news", by("news")[:6], "/category/news/", "The latest stories appear here once they are approved.")}
-    {block("Exploited vulnerabilities", by("exploited-vulnerabilities")[:5], "/category/exploited-vulnerabilities/", "New exploited vulnerabilities appear here once they are approved.")}
+    {block("Latest news", by("news")[:6], "/category/news/", "The latest stories appear here once they are approved.", "t-news")}
+    {block("Exploited vulnerabilities", by("exploited-vulnerabilities")[:5], "/category/exploited-vulnerabilities/", "New exploited vulnerabilities appear here once they are approved.", "t-exploit")}
   </div>
   <div>
-    {block("Learn: theory and practice", by("theory", "practical")[:6], "/learn/", "Theory articles and practical guides appear here once they are approved.")}
+    {block("Learn: theory and practice", by("theory", "practical")[:6], "/learn/", "Theory articles and practical guides appear here once they are approved.", "t-theory")}
   </div>
 </div>"""
     write("/", layout(SITE["name"], body))
@@ -312,8 +404,11 @@ def build_pages():
         if path.stem == "about":
             img = "/assets/og-image.jpg"
             figure = f'<figure class="cover"><img src="{url(img)}" alt="ZNexora Tech logo" width="1200" height="630"></figure>'
+        follow = ""
+        if path.stem == "about" and social_channels():
+            follow = '<section class="about-follow"><h2>Follow ZNexora Tech</h2>' + social_pills() + '</section>'
         write(f"/{path.stem}/", layout(title, f'<article class="post">{figure}<h1 class="page-title">{e(title)}</h1>'
-                                              f'<div class="prose">{render_md(body)}</div></article>', path=f"/{path.stem}/", image=img))
+                                              f'<div class="prose">{render_md(body)}</div>{follow}</article>', path=f"/{path.stem}/", image=img))
 
 
 def build_feeds(posts):

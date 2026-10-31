@@ -194,6 +194,12 @@ Every post automatically gets an original ZNexora Tech graphic in your logo's st
 
 Only use photos you took or made yourself, or have a licence to use. Do not copy photos from news websites.
 
+## Design and social links
+
+The site uses a white, professional design with a color for each section (blue for news, violet for the weekly recap, rose for exploited vulnerabilities, magenta for theory, teal for practical guides). Your cover photo is the home page banner (`assets/cover.jpg`), the flat logo is in the header (`assets/logo-light.png`), and dark mode switches to the glowing logo automatically. Every post ends with a "Thank you for reading!" card with share and subscribe buttons.
+
+Your social channels appear in the footer, on the home page ("Join the ZNexora community"), on the About page and in the thank-you card after every post. They come from the `social` section of `site.json`, shown in the order written there (only full `https://` links). Known names get matching icons: Facebook, Instagram, TikTok, YouTube, WhatsApp, Telegram, Blog, LinkedIn.
+
 ## Your logo and brand files
 Your logo is already built in. The site uses these files in `assets/`:
 
