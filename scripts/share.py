@@ -255,6 +255,10 @@ def main():
         print("No new posts to share.")
         return
     active = [(name, fn) for name, keys, fn in CHANNELS if all(env(k) for k in keys)]
+    only = [c.strip().lower() for c in (env("ONLY_CHANNELS") or "").split(",") if c.strip() and c.strip().lower() != "all"]
+    if only:  # "Share an article again" can pick channels, e.g. "Blogger"
+        active = [(n, f) for n, f in active if any(n.lower().startswith(o) for o in only)]
+        print("Sharing only to:", ", ".join(n for n, _ in active) or "(none connected with that name)")
     if not active:
         print("No social channels are set up yet; skipping sharing.")
         return
