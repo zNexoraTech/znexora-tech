@@ -1,0 +1,55 @@
+name: Clean up a section
+
+on:
+  workflow_dispatch:
+    inputs:
+      section:
+        description: "Section to clean up"
+        required: true
+        default: "theory"
+        type: choice
+        options: [theory, practical, news, weekly-recap, exploited-vulnerabilities, cheatsheets]
+      keep:
+        description: "Article(s) to KEEP: name or web address, separated by commas"
+        required: false
+        default: "is-edr-alone-enough-why-do-we-need-xdr"
+      mode:
+        description: "preview = only show what would be removed; delete = remove it"
+        required: true
+        default: "preview"
+        type: choice
+        options: [preview, delete]
+
+permissions:
+  contents: write
+  actions: write        # to start "Publish site" after deleting
+
+concurrency:
+  group: robots
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Set bot identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Clean up
+        run: python scripts/cleanup_section.py
+        env:
+          SECTION: ${{ inputs.section }}
+          KEEP: ${{ inputs.keep }}
+          MODE: ${{ inputs.mode }}
+      - name: Republish the website
+        if: inputs.mode == 'delete'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish.yml --ref main
