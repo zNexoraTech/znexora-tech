@@ -60,11 +60,15 @@ jobs:
     needs: [build, deploy]
     if: needs.build.outputs.new_posts != ''
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write          # lets the robot send you the WhatsApp/TikTok share kit
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - run: pip install -r requirements.txt
       - name: Share new posts on social channels
         run: python scripts/share.py
         env:
@@ -79,3 +83,9 @@ jobs:
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
           FACEBOOK_PAGE_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
           INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+          LINKEDIN_TOKEN: ${{ secrets.LINKEDIN_TOKEN }}
+          LINKEDIN_AUTHOR: ${{ secrets.LINKEDIN_AUTHOR }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,41 @@
+name: Import uploaded Word and PowerPoint files
+
+on:
+  push:
+    branches: [main]
+    paths: ["inbox/**"]     # runs when you upload files into the inbox folder
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: robots
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Install PowerPoint converter (only when slides were uploaded)
+        run: |
+          if find inbox -iname '*.pptx' 2>/dev/null | grep -q .; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq --no-install-recommends libreoffice-impress poppler-utils fonts-dejavu-core fonts-liberation
+          fi
+      - name: Set bot identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Convert uploads into article drafts
+        run: python scripts/import_inbox.py
