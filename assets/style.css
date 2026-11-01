@@ -299,3 +299,6 @@ a.tag:hover { text-decoration: underline; }
 .t-cheat { --k: var(--cyan); }
 .prose a[href*="/assets/images/"][href$=".png"], .prose a[href*="/assets/images/"][href$=".jpg"], .prose a[href*="/assets/images/"][href$=".jpeg"], .prose a[href*="/assets/images/"][href$=".webp"] { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: .55rem 1.1rem; border-radius: 8px; background: #1d4ed8; color: #fff; font-family: var(--ui); font-weight: 700; font-size: .95rem; text-decoration: none; }
 .prose a[href*="/assets/images/"][href$=".png"]::before, .prose a[href*="/assets/images/"][href$=".jpg"]::before, .prose a[href*="/assets/images/"][href$=".jpeg"]::before, .prose a[href*="/assets/images/"][href$=".webp"]::before { content: "↓"; font-weight: 800; }
+.t-course { --k: #4f46e5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .t-course { --k: #a5b4fc; } }
+:root[data-theme="dark"] .t-course { --k: #a5b4fc; }

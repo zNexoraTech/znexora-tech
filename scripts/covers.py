@@ -26,7 +26,7 @@ MUTED = (150, 166, 196)
 SEVERITY = {"critical": (255, 77, 94), "high": (255, 154, 61), "medium": (240, 200, 70),
             "low": (90, 210, 140), "unscored": (150, 166, 196)}
 LABEL = {"news": "LATEST NEWS", "weekly-recap": "WEEKLY RECAP", "exploited-vulnerabilities": "EXPLOITED VULNERABILITY",
-         "theory": "THEORY", "practical": "TRAINING & COURSES"}
+         "theory": "ARTICLE", "practical": "TRAINING", "courses": "COURSE"}
 FONT_FILE = ROOT / "brand" / "fonts" / "Archivo.ttf"
 LOGO_FILE = ROOT / "assets" / "logo.png"
 _logo_cache = {}
@@ -127,6 +127,27 @@ def motif_practical(layer, r, accent):
     d.text((x0 + 26, y0 + 70 + 4 * 52), ">_", font=font(34, 800, 100), fill=accent + (255,))
 
 
+def motif_course(layer, r, accent):
+    """Course modules with progress: a lesson plan."""
+    d = ImageDraw.Draw(layer)
+    x0, y0 = 760, 150
+    done = r.randint(1, 3)
+    for i in range(4):
+        y = y0 + i * 82
+        d.rounded_rectangle((x0, y, 1150, y + 62), 14, fill=(3, 8, 24, 210), outline=accent + (120,), width=2)
+        cx, cy = x0 + 34, y + 31
+        if i < done:
+            d.ellipse((cx - 15, cy - 15, cx + 15, cy + 15), fill=accent + (255,))
+            d.line((cx - 7, cy, cx - 2, cy + 6, cx + 8, cy - 6), fill=(255, 255, 255, 255), width=4)
+        else:
+            d.ellipse((cx - 15, cy - 15, cx + 15, cy + 15), outline=SILVER + (150,), width=3)
+        d.text((x0 + 64, y + 13), f"Module {i + 1}", font=font(26, 700, 100), fill=SILVER + (230,))
+        d.rounded_rectangle((x0 + 220, y + 25, 1120, y + 37), 6, fill=SILVER + (40,))
+        width = 900 if i < done else (r.randint(0, 600) if i == done else 0)
+        if width:
+            d.rounded_rectangle((x0 + 220, y + 25, x0 + 220 + int((1120 - x0 - 220) * width / 900), y + 37), 6, fill=accent + (230,))
+
+
 def wrap(draw, text, fnt, max_w):
     words, lines, line = text.split(), [], ""
     for w in words:
@@ -155,11 +176,13 @@ def make_cover(path, title, category, score="", severity="", subtitle="", key=No
         accent = (160, 140, 255)
     elif category == "practical":
         accent = (90, 220, 150)
+    elif category == "courses":
+        accent = (150, 165, 255)
     r = rng_for(key or title)
     img = background(accent)
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     {"news": motif_news, "weekly-recap": motif_recap, "theory": motif_theory,
-     "practical": motif_practical}.get(category, lambda *a: None)(layer, r, accent)
+     "practical": motif_practical, "courses": motif_course}.get(category, lambda *a: None)(layer, r, accent)
     if category == "exploited-vulnerabilities":
         motif_vuln(layer, r, accent, score)
     if category != "weekly-recap":
@@ -179,7 +202,7 @@ def make_cover(path, title, category, score="", severity="", subtitle="", key=No
     d.rounded_rectangle((60, 170, 60 + lw + 36, 214), 22, outline=accent, width=2)
     d.text((78, 192), label, font=lf, fill=accent, anchor="lm")
 
-    max_w = 640 if category in ("exploited-vulnerabilities", "practical", "weekly-recap", "theory", "news") else 1000
+    max_w = 640 if category in ("exploited-vulnerabilities", "practical", "courses", "weekly-recap", "theory", "news") else 1000
     for size in (62, 56, 50, 44, 40):
         tf = font(size, 820, 82)
         lines = wrap(d, title, tf, max_w)

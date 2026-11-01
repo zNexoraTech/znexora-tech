@@ -1,7 +1,7 @@
 {
   "name": "ZNexora Tech",
   "tagline": "Navigate the future securely.",
-  "description": "Cybersecurity news, weekly threat recaps, theory, and hands-on training and courses to help organizations navigate the future securely.",
+  "description": "Cybersecurity news, weekly threat recaps, articles, training and courses to help organizations navigate the future securely.",
   "url": "https://znexoratech.com",
   "custom_domain": "znexoratech.com",
   "language": "en",
@@ -22,8 +22,10 @@
     "news": "Latest news",
     "weekly-recap": "Weekly recap",
     "exploited-vulnerabilities": "Exploited vulnerabilities",
-    "theory": "Theory",
-    "practical": "Training & Courses"
+    "theory": "Articles",
+    "practical": "Training",
+    "courses": "Courses",
+    "cheatsheets": "Cheat sheets"
   },
   "automation": {
     "ai_model": "claude-haiku-5-5",

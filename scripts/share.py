@@ -29,6 +29,7 @@ from common import ROOT, USER_AGENT, http_json, load_site, parse_front_matter
 SITE = load_site()
 CATEGORY_NAMES = dict(SITE.get("categories", {}))
 CATEGORY_NAMES.setdefault("cheatsheets", "Cheat sheets")
+CATEGORY_NAMES.setdefault("courses", "Courses")
 BASE_URL = ("https://" + SITE["custom_domain"].strip().strip("/")) if SITE.get("custom_domain") else SITE["url"].rstrip("/")
 env = os.environ.get
 
@@ -83,6 +84,7 @@ HASHTAGS = {
     "theory": "#cybersecurity #learning #infosec",
     "practical": "#cybersecurity #howto #sysadmin #infosec",
     "cheatsheets": "#cheatsheet #cybersecurity #infosec #sysadmin #learning",
+    "courses": "#cybersecurity #course #learning #infosec #careers",
 }
 
 
@@ -166,7 +168,7 @@ def article_html(meta, link):
 
 
 def blogger(meta, link):
-    cats = (SITE.get("blogger") or {}).get("categories", ["theory", "practical", "weekly-recap", "cheatsheets"])
+    cats = (SITE.get("blogger") or {}).get("categories", ["theory", "practical", "courses", "weekly-recap", "cheatsheets"])
     if meta.get("category") not in cats:
         raise SkipChannel("this section is not sent to the blog (see blogger.categories in site.json)")
     token = google_token()
@@ -208,7 +210,7 @@ def linkedin(meta, link):
 
 # ---------------- Share kit for WhatsApp Channels and TikTok (no public posting API)
 def share_kit(meta, link):
-    cats = (SITE.get("share_kit") or {}).get("categories", ["theory", "practical", "weekly-recap", "cheatsheets"])
+    cats = (SITE.get("share_kit") or {}).get("categories", ["theory", "practical", "courses", "weekly-recap", "cheatsheets"])
     if meta.get("category") not in cats:
         raise SkipChannel("no share kit for this section")
     repo = env("GITHUB_REPOSITORY")

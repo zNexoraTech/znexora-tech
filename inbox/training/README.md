@@ -1,0 +1,1 @@
+Upload training files (Word .docx, PowerPoint .pptx or pictures) in this folder.

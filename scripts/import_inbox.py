@@ -26,7 +26,9 @@ from common import (PR_FOOTER, ROOT, automation, commit_state, dump_front_matter
                     save_json, slugify, today)
 
 INBOX = ROOT / "inbox"
-SECTIONS = {"news", "weekly-recap", "exploited-vulnerabilities", "theory", "practical", "cheatsheets"}
+SECTIONS = {"news", "weekly-recap", "exploited-vulnerabilities", "theory", "practical", "courses", "cheatsheets"}
+ALIASES = {"articles": "theory", "article": "theory", "training": "practical", "course": "courses",
+           "cheat-sheets": "cheatsheets", "cheatsheet": "cheatsheets"}  # folder name -> section
 PICTURES = (".png", ".jpg", ".jpeg", ".webp")
 IMAGES = ROOT / "assets" / "images"
 FILES = ROOT / "assets" / "files"
@@ -42,7 +44,8 @@ def groups():
     for path in sorted(INBOX.rglob("*")):
         if path.suffix.lower() not in (".docx", ".pptx") + PICTURES or path.name.startswith("~$"):
             continue
-        section = path.parent.name if path.parent != INBOX else "theory"
+        section = path.parent.name.lower() if path.parent != INBOX else "theory"
+        section = ALIASES.get(section, section)
         if section not in SECTIONS:
             section = "theory"
         kind = "picture" if path.suffix.lower() in PICTURES else path.suffix.lower()[1:]

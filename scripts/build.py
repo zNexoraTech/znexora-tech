@@ -25,16 +25,18 @@ if SITE.get("custom_domain"):
     BASE_URL = "https://" + SITE["custom_domain"].strip().strip("/")
 BP = urllib.parse.urlparse(BASE_URL).path.rstrip("/")
 CATS = dict(SITE.get("categories", {}))
+CATS.setdefault("courses", "Courses")
 CATS.setdefault("cheatsheets", "Cheat sheets")  # added automatically, no settings change needed
 SEV_LABEL = {"critical": "Critical", "high": "High", "medium": "Medium", "low": "Low", "unscored": "Not scored"}
 TONE = {"news": "t-news", "weekly-recap": "t-recap", "exploited-vulnerabilities": "t-exploit",
-        "theory": "t-theory", "practical": "t-practical", "blog": "t-blog", "cheatsheets": "t-cheat"}
+        "theory": "t-theory", "practical": "t-practical", "blog": "t-blog", "cheatsheets": "t-cheat", "courses": "t-course"}
 CAT_INTRO = {
     "news": "The security stories that matter, explained in plain language.",
     "weekly-recap": "Every Monday: the week’s top news, ransomware activity and web defacement in one read.",
     "exploited-vulnerabilities": "Vulnerabilities attackers are using right now, with what to patch first.",
-    "theory": "Security concepts made clear, from fundamentals to advanced topics.",
-    "practical": "Hands-on training and courses: step-by-step lessons for defending real systems.",
+    "theory": "In-depth articles on security concepts, threats and technology, from fundamentals to advanced topics.",
+    "practical": "Hands-on training: step-by-step lessons for defending real systems.",
+    "courses": "Structured courses that take you from the basics to confident practice, one module at a time.",
     "cheatsheets": "One-page references you can download, print and share.",
 }
 BLOG = []
@@ -266,7 +268,7 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <a class="skip" href="#main">Skip to content</a>
 <div class="topbar"><div class="wrap topbar-row">
   <span class="today">{today.strftime('%A, %-d %B %Y')}</span>
-  <span class="topbar-tag">Cybersecurity news, insights, training &amp; courses</span>
+  <span class="topbar-tag">Cybersecurity news, articles, training &amp; courses</span>
   <ul class="topbar-social">{top_social}</ul>
   <a class="topbar-sub" href="{e(subscribe_href)}">{icon("bell", 15)}Subscribe</a>
 </div></div>
@@ -428,10 +430,10 @@ def build_home(posts):
     trio_html = f'<section class="card-row">{"".join(card(p) for p in trio)}</section>' if trio else ""
     used = {p["slug"] for p in ([lead] if lead else []) + trio}
     news = [p for p in posts if p["slug"] not in used and p["category"] in ("news", "exploited-vulnerabilities", "weekly-recap")][:8]
-    learn = [p for p in posts if p["category"] in ("theory", "practical")][:5]
+    learn = [p for p in posts if p["category"] in ("theory", "practical", "courses")][:5]
     learn_html = ""
     if learn:
-        learn_html = (section_head("Learn: theory, training & courses", "t-theory", url("/learn/"))
+        learn_html = (section_head("Learn: articles, training & courses", "t-theory", url("/learn/"))
                       + f'<div class="learn-grid">{card(learn[0], "lg")}<div class="learn-list">{"".join(row(p) for p in learn[1:5])}</div></div>')
     blog_html = ""
     if BLOG:
@@ -539,8 +541,8 @@ def list_page(path, title, intro, items, tone, posts, image=None):
 
 def build_lists(posts):
     list_page("/posts/", "All articles", "Everything published on ZNexora Tech, newest first.", posts, "t-news", posts)
-    list_page("/learn/", "Learn: theory, training & courses", "Security concepts, hands-on training and courses for defenders.",
-              [p for p in posts if p["category"] in ("theory", "practical")], "t-theory", posts)
+    list_page("/learn/", "Learn: articles, training & courses", "In-depth articles, hands-on training and structured courses for defenders.",
+              [p for p in posts if p["category"] in ("theory", "practical", "courses")], "t-theory", posts)
     for slug, name in CATS.items():
         list_page(f"/category/{slug}/", name, CAT_INTRO.get(slug, ""), [p for p in posts if p["category"] == slug],
                   TONE.get(slug, "t-news"), posts)
