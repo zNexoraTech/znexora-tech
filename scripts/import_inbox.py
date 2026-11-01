@@ -87,6 +87,8 @@ def convert_docx(path, slug):
     md = re.sub(r"^#\s+", "## ", md, flags=re.M)  # article headings start at level 2 on the website
     first = next((p for p in md.split("\n\n") if p.strip() and not p.startswith(("#", "!", "-", "|", "*"))), "")
     summary = re.sub(r"[*_`\[\]]|\(http[^)]*\)", "", first).strip()
+    if first and len(summary) <= 220:  # shown in the Key points box, so don't repeat it as the opening
+        md = md.replace(first, "", 1).lstrip()
     summary = summary[:220].rsplit(" ", 1)[0] + "…" if len(summary) > 220 else summary
     return title, summary, md
 
