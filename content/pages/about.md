@@ -16,7 +16,9 @@ Technology moves fast, and so do the threats that come with it. We help organiza
 
 **Exploited vulnerabilities.** Briefings on vulnerabilities that CISA has confirmed are being exploited in real attacks.
 
-**Theory and practical guides.** Clear explanations of security concepts, and hands-on guides for defending systems.
+**Theory.** Clear explanations of security concepts, from fundamentals to advanced topics.
+
+**Training & Courses.** Hands-on lessons and step-by-step courses for defending real systems.
 
 ## How we work
 

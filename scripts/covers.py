@@ -26,7 +26,7 @@ MUTED = (150, 166, 196)
 SEVERITY = {"critical": (255, 77, 94), "high": (255, 154, 61), "medium": (240, 200, 70),
             "low": (90, 210, 140), "unscored": (150, 166, 196)}
 LABEL = {"news": "LATEST NEWS", "weekly-recap": "WEEKLY RECAP", "exploited-vulnerabilities": "EXPLOITED VULNERABILITY",
-         "theory": "THEORY", "practical": "PRACTICAL GUIDE"}
+         "theory": "THEORY", "practical": "TRAINING & COURSES"}
 FONT_FILE = ROOT / "brand" / "fonts" / "Archivo.ttf"
 LOGO_FILE = ROOT / "assets" / "logo.png"
 _logo_cache = {}

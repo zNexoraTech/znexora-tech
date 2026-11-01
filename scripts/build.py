@@ -34,7 +34,7 @@ CAT_INTRO = {
     "weekly-recap": "Every Monday: the week’s top news, ransomware activity and web defacement in one read.",
     "exploited-vulnerabilities": "Vulnerabilities attackers are using right now, with what to patch first.",
     "theory": "Security concepts made clear, from fundamentals to advanced topics.",
-    "practical": "Hands-on, step-by-step guides for defending real systems.",
+    "practical": "Hands-on training and courses: step-by-step lessons for defending real systems.",
     "cheatsheets": "One-page references you can download, print and share.",
 }
 BLOG = []
@@ -266,7 +266,7 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <a class="skip" href="#main">Skip to content</a>
 <div class="topbar"><div class="wrap topbar-row">
   <span class="today">{today.strftime('%A, %-d %B %Y')}</span>
-  <span class="topbar-tag">Cybersecurity news, insights &amp; practical guides</span>
+  <span class="topbar-tag">Cybersecurity news, insights, training &amp; courses</span>
   <ul class="topbar-social">{top_social}</ul>
   <a class="topbar-sub" href="{e(subscribe_href)}">{icon("bell", 15)}Subscribe</a>
 </div></div>
@@ -431,7 +431,7 @@ def build_home(posts):
     learn = [p for p in posts if p["category"] in ("theory", "practical")][:5]
     learn_html = ""
     if learn:
-        learn_html = (section_head("Learn: theory & practical", "t-theory", url("/learn/"))
+        learn_html = (section_head("Learn: theory, training & courses", "t-theory", url("/learn/"))
                       + f'<div class="learn-grid">{card(learn[0], "lg")}<div class="learn-list">{"".join(row(p) for p in learn[1:5])}</div></div>')
     blog_html = ""
     if BLOG:
@@ -539,7 +539,7 @@ def list_page(path, title, intro, items, tone, posts, image=None):
 
 def build_lists(posts):
     list_page("/posts/", "All articles", "Everything published on ZNexora Tech, newest first.", posts, "t-news", posts)
-    list_page("/learn/", "Learn: theory & practical", "Concepts and hands-on guides for defenders.",
+    list_page("/learn/", "Learn: theory, training & courses", "Security concepts, hands-on training and courses for defenders.",
               [p for p in posts if p["category"] in ("theory", "practical")], "t-theory", posts)
     for slug, name in CATS.items():
         list_page(f"/category/{slug}/", name, CAT_INTRO.get(slug, ""), [p for p in posts if p["category"] == slug],
