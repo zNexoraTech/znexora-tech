@@ -24,4 +24,4 @@ We combine automation with human judgment. Automation collects public informatio
 
 ## Contact
 
-Spotted a mistake or have a story idea? Email contact@example.com.
+Spotted a mistake or have a story idea? Email aicreativestudio.777@gmail.com.
