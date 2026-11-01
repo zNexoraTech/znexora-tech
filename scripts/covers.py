@@ -171,8 +171,8 @@ def make_cover(path, title, category, score="", severity="", subtitle="", key=No
     img.alpha_composite(shade.filter(ImageFilter.GaussianBlur(80)))
 
     d = ImageDraw.Draw(img)
-    lg = logo(84)
-    img.alpha_composite(lg, (52, 40))
+    if LOGO_FILE.is_file():  # skip the small logo if the file is missing, never crash
+        img.alpha_composite(logo(84), (52, 40))
     label = LABEL.get(category, category.upper().replace("-", " "))
     lf = font(24, 750, 110)
     lw = d.textlength(label, font=lf)

@@ -194,6 +194,60 @@ Every post automatically gets an original ZNexora Tech graphic in your logo's st
 
 Only use photos you took or made yourself, or have a licence to use. Do not copy photos from news websites.
 
+## Weekly articles from Word and PowerPoint
+
+### Publishing a weekly article (every week, about 3 minutes)
+
+1. Name your files the same, for example `Zero Trust Explained.docx` and `Zero Trust Explained.pptx`.
+2. On github.com open the **inbox** folder, then the section folder (**theory**, **practical**, **news** or **weekly-recap**).
+3. Inside the section folder: **Add file > Upload files**, drag in both files, **Commit changes**.
+4. Within about 5 minutes you get a draft in **Pull requests**: "Draft: <your title>". Check it under **Files changed**.
+5. **Merge pull request**. The robot then:
+   - publishes the article on the website (text, pictures, tables, slide gallery, PDF download; slide 1 becomes the cover),
+   - posts it to your **Facebook Page**, **Instagram**, **Blogger blog** and **LinkedIn** (once connected below),
+   - sends you a **Share kit** notification for **WhatsApp** and **TikTok** (see below).
+
+How your Word file becomes the article: the first **Heading 1** is the title, the first paragraph is the summary, other headings become sections. Pictures in PNG or JPG format come through; drawings made with Word's shape tools may not, so insert diagrams as pictures.
+
+### WhatsApp Channel and TikTok: the share kit
+
+WhatsApp Channels and TikTok do not offer automatic posting for small publishers (TikTok requires an app review, WhatsApp Channels have no posting API). So after each article, GitHub sends you a notification titled **"Share kit: <title>"** containing:
+
+- a **WhatsApp message**, ready to copy and paste into your channel,
+- the **slide pictures** in order and a **TikTok caption** with hashtags, ready for a TikTok photo post.
+
+It takes about a minute on your phone. Close the issue when done.
+
+### Connect your Blogger blog (one time, about 20 minutes)
+
+Google changes these screens from time to time. If anything looks different, send a screenshot.
+
+1. Go to https://console.cloud.google.com and create a project named `ZNexora Publisher`.
+2. **APIs & Services > Library**: search **Blogger API v3** and click **Enable**.
+3. **Google Auth Platform** (or **OAuth consent screen**): choose **External**, app name `ZNexora Publisher`, your email as support and developer contact. Under **Audience**, click **Publish app** so it is **In production**.
+   - Important: if it stays in "Testing", Google stops the connection after 7 days. "Unverified" is fine because only you use it.
+4. **Clients** (or **Credentials > Create credentials > OAuth client ID**): type **Web application**. Under **Authorized redirect URIs** add `https://developers.google.com/oauthplayground`. Create, then copy the **Client ID** and **Client secret**.
+5. Open https://developers.google.com/oauthplayground
+   - Click the **gear icon** (top right), tick **Use your own OAuth credentials**, paste the Client ID and secret.
+   - In **Step 1**, type `https://www.googleapis.com/auth/blogger` in the box and click **Authorize APIs**. Sign in with the Google account that owns your blog. If you see "Google hasn't verified this app", click **Advanced > Go to ZNexora Publisher**, then **Continue**.
+   - In **Step 2**, click **Exchange authorization code for tokens** and copy the **Refresh token**.
+6. In GitHub: **Settings > Secrets and variables > Actions > New repository secret**, add:
+   - `BLOGGER_CLIENT_ID`, `BLOGGER_CLIENT_SECRET`, `BLOGGER_REFRESH_TOKEN`
+
+The robot finds your blog from the **Blog** link in `site.json`. By default it sends **theory, practical and weekly-recap** articles (not every news item), as the full article with a link back to the website. To send only a summary with a link instead, add to `site.json`: `"blogger": {"mode": "summary"}`.
+
+### Connect LinkedIn (one time, about 15 minutes)
+
+**Posting to your personal profile** (available to everyone):
+1. Go to https://www.linkedin.com/developers/apps and click **Create app**. Name it `ZNexora Publisher` and link it to your ZNexora Tech LinkedIn page.
+2. In the app's **Products** tab, request **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** (both are approved instantly).
+3. Open the **OAuth token generator** (Docs and tools > OAuth Token Tools), choose your app, tick `openid`, `profile` and `w_member_social`, and generate a token.
+4. In GitHub add the secret `LINKEDIN_TOKEN` with that token.
+
+LinkedIn tokens last **60 days**. Put a reminder in your calendar to generate a new one and update the secret every 2 months; the robot's log says "token expired" when it is time.
+
+**Posting as your company page** requires LinkedIn's **Community Management API** product, which LinkedIn approves only after verifying your business. If you get approval, generate the token with `w_organization_social` instead and add the secret `LINKEDIN_AUTHOR` with the value `urn:li:organization:<your page number>` (the number in your page's admin address). Until then, posting to your profile and resharing to the page takes one tap.
+
 ## Website security (built in)
 
 - **Strict browser security rules (Content Security Policy):** only the site's own scripts, styles and fonts may load; images only from the site and your Blogger blog. No inline code is allowed.

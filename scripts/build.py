@@ -147,6 +147,35 @@ def blog_home():
     return str((SITE.get("blog") or {}).get("url") or (SITE.get("social") or {}).get("Blog", "")).strip()
 
 
+# ---------------------------------------------------------------- header logo & cover
+def asset_exists(name):
+    return (OUT / "assets" / name).is_file()
+
+
+def brand_html():
+    """Header logo. Uses the flat logo on light backgrounds and the glowing one in dark mode.
+    If a logo file is missing, falls back to the other one, then to the name in text."""
+    name = e(SITE["name"])
+    light, dark = asset_exists("logo-light.png"), asset_exists("logo.png")
+    if light and dark:
+        inner = (f'<img class="logo-on-light" src="{url("/assets/logo-light.png")}" alt="{name}" width="379" height="120">'
+                 f'<img class="logo-on-dark" src="{url("/assets/logo.png")}" alt="{name}" width="347" height="184">')
+    elif light or dark:
+        f, w, h = ("logo-light.png", 379, 120) if light else ("logo.png", 347, 184)
+        inner = f'<img class="logo-single" src="{url("/assets/" + f)}" alt="{name}" width="{w}" height="{h}">'
+    else:
+        inner = f'<span class="logo-text">{name}</span>'
+    return f'<a class="brand" href="{url("/")}">{inner}</a>'
+
+
+def header_cover():
+    """A small version of the cover beside the logo (hidden on phones)."""
+    if not HAS_BANNER:
+        return ""
+    return (f'<a class="header-cover" href="{url("/about/")}" aria-label="About ZNexora Tech">'
+            f'<img src="{url("/assets/cover-banner-900.jpg")}" alt="" width="900" height="413"></a>')
+
+
 # ---------------------------------------------------------------- page frame
 def layout(title, body, description="", path="/", og_type="website", image="/assets/og-image.jpg"):
     full_title = title if title == SITE["name"] else f"{title} | {SITE['name']}"
@@ -201,7 +230,7 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 </div></div>
 <header class="masthead">
   <div class="wrap masthead-row">
-    <a class="brand" href="{url('/')}"><img class="logo-on-light" src="{url('/assets/logo-light.png')}" alt="{e(SITE['name'])}" width="379" height="120"><img class="logo-on-dark" src="{url('/assets/logo.png')}" alt="{e(SITE['name'])}" width="347" height="184"></a>
+    <div class="brand-group">{brand_html()}{header_cover()}</div>
     <div class="tools">
       <div class="search">
         <label class="visually-hidden" for="search-input">Search ZNexora Tech</label>
@@ -366,15 +395,7 @@ def build_home(posts):
     if social_channels():
         community = (f'<section class="community"><div><h2>Join the ZNexora community</h2>'
                      f'<p>Daily security news, tips and guides on your favourite platform.</p></div>{social_pills()}</section>')
-    banner = ""
-    if HAS_BANNER:
-        banner = (f'<a class="home-banner" href="{url("/about/")}"><picture>'
-                  f'<source media="(max-width: 700px)" srcset="{url("/assets/cover-banner-900.jpg")}">'
-                  f'<img src="{url("/assets/cover-banner.jpg")}" width="1536" height="705" fetchpriority="high" '
-                  f'alt="ZNexora Tech. Empowering minds. Securing futures. Your trusted hub for technology, security and innovation: '
-                  f'cyber security, IT knowledge, AI and automation, cloud technologies and practical solutions."></picture></a>')
-    body = f"""{banner}
-{top}
+    body = f"""{top}
 {trio_html}
 <div class="with-sidebar">
   <div class="main-col">

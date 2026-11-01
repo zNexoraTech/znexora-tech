@@ -7,10 +7,16 @@ it only runs if its secrets are set in GitHub (Settings > Secrets and variables 
   Mastodon:  MASTODON_INSTANCE, MASTODON_TOKEN
   Facebook:  FACEBOOK_PAGE_ID, FACEBOOK_PAGE_TOKEN
   Instagram: INSTAGRAM_ACCOUNT_ID, FACEBOOK_PAGE_TOKEN  (posts the post's graphic with a caption)
+  Blogger:   BLOGGER_CLIENT_ID, BLOGGER_CLIENT_SECRET, BLOGGER_REFRESH_TOKEN (full article, linked back)
+  LinkedIn:  LINKEDIN_TOKEN (+ LINKEDIN_AUTHOR = urn:li:organization:<id> to post as a company page)
+Share kit:   for WhatsApp Channels and TikTok, which have no public posting API, a ready-to-copy
+             message and the slide pictures are sent to you as a GitHub notification (issue).
 """
 import datetime as dt
+import html
 import json
 import pathlib
+import re
 import time
 import os
 import sys
@@ -21,6 +27,7 @@ import urllib.request
 from common import ROOT, USER_AGENT, http_json, load_site, parse_front_matter
 
 SITE = load_site()
+CATEGORY_NAMES = SITE.get("categories", {})
 BASE_URL = ("https://" + SITE["custom_domain"].strip().strip("/")) if SITE.get("custom_domain") else SITE["url"].rstrip("/")
 env = os.environ.get
 
@@ -122,6 +129,109 @@ def instagram(meta, link):
     graph_post(f"{account}/media_publish", {"creation_id": container, "access_token": token})
 
 
+# ---------------- Blogger (Google Blogger API v3)
+def google_token():
+    data = urllib.parse.urlencode({"client_id": env("BLOGGER_CLIENT_ID"), "client_secret": env("BLOGGER_CLIENT_SECRET"),
+                                   "refresh_token": env("BLOGGER_REFRESH_TOKEN"), "grant_type": "refresh_token"}).encode()
+    req = urllib.request.Request("https://oauth2.googleapis.com/token", data=data, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        return json.loads(resp.read())["access_token"]
+
+
+def article_html(meta, link):
+    """The article as HTML for Blogger, with pictures pointing to the website."""
+    import markdown
+    body = meta.get("_body", "")
+    body = body.replace("../../assets/", f"{BASE_URL}/assets/")
+    html_body = markdown.markdown(body.replace("<", "&lt;"), extensions=["tables", "sane_lists"])
+    cover = f'<p><a href="{link}"><img src="{meta["_image"]}" alt="" style="max-width:100%"></a></p>'
+    if (SITE.get("blogger") or {}).get("mode", "full") == "summary":
+        return (cover + f"<p>{html.escape(meta.get('summary', ''))}</p>"
+                f'<p><a href="{link}"><strong>Read the full article on ZNexora Tech →</strong></a></p>')
+    note = (f'<p><em>Originally published on <a href="{link}">ZNexora Tech</a>. '
+            f'Follow us for weekly cybersecurity news, recaps and guides.</em></p>')
+    return cover + html_body + note
+
+
+def blogger(meta, link):
+    cats = (SITE.get("blogger") or {}).get("categories", ["theory", "practical", "weekly-recap"])
+    if meta.get("category") not in cats:
+        raise SkipChannel("this section is not sent to the blog (see blogger.categories in site.json)")
+    token = google_token()
+    headers = {"Authorization": f"Bearer {token}", "User-Agent": USER_AGENT}
+    blog_url = (SITE.get("social") or {}).get("Blog", "")
+    blog_id = env("BLOGGER_BLOG_ID") or http_json(
+        "https://www.googleapis.com/blogger/v3/blogs/byurl?url=" + urllib.parse.quote(blog_url, safe=""), headers=headers)["id"]
+    labels = [CATEGORY_NAMES.get(meta.get("category"), "ZNexora Tech")] + [t.strip() for t in meta.get("tags", "").split(",") if t.strip()][:4]
+    http_json(f"https://www.googleapis.com/blogger/v3/blogs/{blog_id}/posts/", headers=headers, method="POST",
+              data={"kind": "blogger#post", "title": meta["title"], "content": article_html(meta, link), "labels": labels})
+
+
+# ---------------- LinkedIn (Posts API)
+def linkedin_author():
+    """Your LinkedIn identity. Set LINKEDIN_AUTHOR for a company page; otherwise your own profile is used."""
+    if env("LINKEDIN_AUTHOR"):
+        return env("LINKEDIN_AUTHOR")
+    info = http_json("https://api.linkedin.com/v2/userinfo", headers={"Authorization": f"Bearer {env('LINKEDIN_TOKEN')}"})
+    return f"urn:li:person:{info['sub']}"
+
+
+def linkedin(meta, link):
+    version = str((SITE.get("linkedin") or {}).get("api_version", "202609"))
+    payload = {"author": linkedin_author(), "commentary": message(meta, link, 2900).replace("(", "[").replace(")", "]"),
+               "visibility": "PUBLIC", "lifecycleState": "PUBLISHED", "isReshareDisabledByAuthor": False,
+               "distribution": {"feedDistribution": "MAIN_FEED", "targetEntities": [], "thirdPartyDistributionChannels": []},
+               "content": {"article": {"source": link, "title": meta["title"][:200], "description": meta.get("summary", "")[:250]}}}
+    req = urllib.request.Request("https://api.linkedin.com/rest/posts", data=json.dumps(payload).encode(), method="POST",
+                                 headers={"Authorization": f"Bearer {env('LINKEDIN_TOKEN')}", "Linkedin-Version": version,
+                                          "X-Restli-Protocol-Version": "2.0.0", "Content-Type": "application/json",
+                                          "User-Agent": USER_AGENT})
+    try:
+        urllib.request.urlopen(req, timeout=60).read()
+    except urllib.error.HTTPError as exc:
+        hint = {401: "token expired (LinkedIn tokens last 60 days; create a new one)",
+                426: "API version retired; update linkedin.api_version in site.json"}.get(exc.code, "")
+        raise RuntimeError(f"{exc.code} {hint} {exc.read().decode(errors='replace')[:200]}") from None
+
+
+# ---------------- Share kit for WhatsApp Channels and TikTok (no public posting API)
+def share_kit(meta, link):
+    cats = (SITE.get("share_kit") or {}).get("categories", ["theory", "practical", "weekly-recap"])
+    if meta.get("category") not in cats:
+        raise SkipChannel("no share kit for this section")
+    repo = env("GITHUB_REPOSITORY")
+    slides = re.findall(r"\(\.\./\.\./(assets/images/[^)]+/slides/slide-\d+\.jpg)\)", meta.get("_body", ""))
+    tags = HASHTAGS.get(meta.get("category"), "#cybersecurity")
+    whatsapp = f"*{meta['title']}*\n\n{meta.get('summary', '')}\n\nRead more: {link}"
+    tiktok = f"{meta['title']} 🔐\n{meta.get('summary', '')[:150]}\nFull article: link in bio\n{tags} #fyp #techtok"
+    pics = "\n".join(f"{i}. {BASE_URL}/{s}" for i, s in enumerate(slides, 1)) or f"1. {meta['_image']}"
+    body = f"""Your article is live: {link}
+
+## 💬 WhatsApp Channel
+Open your channel in WhatsApp, paste this message, and send:
+```
+{whatsapp}
+```
+
+## 🎵 TikTok (photo post)
+1. Open each picture below on your phone and save it.
+2. In TikTok tap **+**, choose **Photo**, select the pictures in order, and paste this caption:
+```
+{tiktok}
+```
+Pictures:
+{pics}
+
+Close this issue when you are done."""
+    http_json(f"https://api.github.com/repos/{repo}/issues", method="POST",
+              headers={"Authorization": f"Bearer {env('GH_TOKEN')}", "Accept": "application/vnd.github+json"},
+              data={"title": f"Share kit: {meta['title']}"[:250], "body": body})
+
+
+class SkipChannel(Exception):
+    pass
+
+
 CHANNELS = [
     ("Telegram", ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"), telegram),
     ("Discord", ("DISCORD_WEBHOOK_URL",), discord),
@@ -129,6 +239,9 @@ CHANNELS = [
     ("Mastodon", ("MASTODON_INSTANCE", "MASTODON_TOKEN"), mastodon),
     ("Facebook", ("FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_TOKEN"), facebook),
     ("Instagram", ("INSTAGRAM_ACCOUNT_ID", "FACEBOOK_PAGE_TOKEN"), instagram),
+    ("Blogger", ("BLOGGER_CLIENT_ID", "BLOGGER_CLIENT_SECRET", "BLOGGER_REFRESH_TOKEN"), blogger),
+    ("LinkedIn", ("LINKEDIN_TOKEN",), linkedin),
+    ("Share kit (WhatsApp & TikTok)", ("GH_TOKEN", "GITHUB_REPOSITORY"), share_kit),
 ]
 
 
@@ -146,13 +259,16 @@ def main():
         path = ROOT / f
         if not path.exists():
             continue
-        meta, _ = parse_front_matter(path.read_text(encoding="utf-8"))
+        meta, body = parse_front_matter(path.read_text(encoding="utf-8"))
+        meta["_body"] = body
         link = f"{BASE_URL}/posts/{path.stem}/"
         meta["_image"] = image_url(meta, path.stem)
         for name, fn in active:
             try:
                 fn(meta, link)
                 print(f"Shared on {name}: {meta.get('title')}")
+            except SkipChannel as why:
+                print(f"Skipped {name}: {why}")
             except Exception as exc:  # one failing channel should not stop the others
                 print(f"Could not share on {name}: {exc}")
 
