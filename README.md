@@ -209,6 +209,10 @@ Only use photos you took or made yourself, or have a licence to use. Do not copy
 
 How your Word file becomes the article: the first **Heading 1** is the title, the first paragraph is the summary, other headings become sections. Pictures in PNG or JPG format come through; drawings made with Word's shape tools may not, so insert diagrams as pictures.
 
+### Cheat sheets and infographics
+
+Upload a PNG or JPG (for example `Linux Hardening Cheat Sheet.png`) into **inbox > cheatsheets**. After you approve the draft, the site shows it in full on its own page with a **Download** button, under the new **Cheat sheets** menu item. It is shared as a full **photo post on Facebook**, in **Instagram's 4:5 shape** (the whole sheet on a navy background), to **Blogger** and **LinkedIn**, and the share kit includes it for **TikTok** and **WhatsApp**. The file name becomes the title. To add a description, upload a Word file with the same name next to the picture.
+
 ### WhatsApp Channel and TikTok: the share kit
 
 WhatsApp Channels and TikTok do not offer automatic posting for small publishers (TikTok requires an app review, WhatsApp Channels have no posting API). So after each article, GitHub sends you a notification titled **"Share kit: <title>"** containing:

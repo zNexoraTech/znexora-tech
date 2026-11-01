@@ -25,7 +25,8 @@ from common import (PR_FOOTER, ROOT, automation, commit_state, dump_front_matter
                     save_json, slugify, today)
 
 INBOX = ROOT / "inbox"
-SECTIONS = {"news", "weekly-recap", "exploited-vulnerabilities", "theory", "practical"}
+SECTIONS = {"news", "weekly-recap", "exploited-vulnerabilities", "theory", "practical", "cheatsheets"}
+PICTURES = (".png", ".jpg", ".jpeg", ".webp")
 IMAGES = ROOT / "assets" / "images"
 FILES = ROOT / "assets" / "files"
 
@@ -38,12 +39,13 @@ def groups():
     """Pair .docx and .pptx files that share a name. Returns {(section, name): {"docx": p, "pptx": p}}."""
     found = {}
     for path in sorted(INBOX.rglob("*")):
-        if path.suffix.lower() not in (".docx", ".pptx") or path.name.startswith("~$"):
+        if path.suffix.lower() not in (".docx", ".pptx") + PICTURES or path.name.startswith("~$"):
             continue
         section = path.parent.name if path.parent != INBOX else "theory"
         if section not in SECTIONS:
             section = "theory"
-        found.setdefault((section, path.stem.strip()), {})[path.suffix.lower()[1:]] = path
+        kind = "picture" if path.suffix.lower() in PICTURES else path.suffix.lower()[1:]
+        found.setdefault((section, path.stem.strip()), {})[kind] = path
     return found
 
 
@@ -174,8 +176,9 @@ def convert_pptx(path, slug):
 
 # ---------------------------------------------------------------- drafts
 def make_article(section, name, files, site):
-    docx, pptx = files.get("docx"), files.get("pptx")
-    title, summary, body = (name, "", "")
+    docx, pptx, picture = files.get("docx"), files.get("pptx"), files.get("picture")
+    clean = re.sub(r"[-_]+", " ", name).strip()
+    title, summary, body = (clean.title() if clean.islower() else clean, "", "")
     slug_hint = slugify(name)
     if docx:
         title, summary, body = convert_docx(docx, slug_hint)
@@ -191,6 +194,18 @@ def make_article(section, name, files, site):
     slides_md = ""
     if pptx:
         slides_md, _ = convert_pptx(pptx, slug)
+    if picture:  # a cheat sheet or infographic: shown in full, downloadable, and used as the cover
+        IMAGES.mkdir(parents=True, exist_ok=True)
+        dest = IMAGES / f"{slug}{picture.suffix.lower()}"
+        shutil.copy(picture, dest)
+        rel = f"../../assets/images/{dest.name}"
+        kind = "cheat sheet" if section == "cheatsheets" else "picture"
+        body = (f"![{title}]({rel})\n\n[Download the {kind} ({picture.suffix[1:].upper()})]({rel})"
+                + (f"\n\n{body}" if body else ""))
+        if not summary:
+            what = title if "cheat sheet" in title.lower() or "cheatsheet" in title.lower() else f"{title} cheat sheet"
+            summary = (f"A free one-page {what} from ZNexora Tech. Download it, print it, and share it with your team."
+                       if section == "cheatsheets" else f"{title}, from ZNexora Tech.")
     if not summary:
         summary = f"{title}: slides and key points from ZNexora Tech."
     meta = {"title": title, "date": today().isoformat(), "category": section, "summary": summary,
@@ -226,7 +241,7 @@ def main():
             post = ROOT / "content" / "posts" / f"{slug}.md"
             post.write_text(content, encoding="utf-8")
             git("add", str(post))
-            for extra in (IMAGES / slug, IMAGES / f"{slug}.jpg", FILES / f"{slug}.pdf"):
+            for extra in [IMAGES / slug, IMAGES / f"{slug}.jpg", FILES / f"{slug}.pdf"] + [IMAGES / f"{slug}{x}" for x in PICTURES]:
                 if extra.exists():
                     git("add", str(extra))
             git("rm", "-q", *sources)  # the inbox empties itself when you approve

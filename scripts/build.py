@@ -24,16 +24,18 @@ BASE_URL = SITE["url"].rstrip("/")
 if SITE.get("custom_domain"):
     BASE_URL = "https://" + SITE["custom_domain"].strip().strip("/")
 BP = urllib.parse.urlparse(BASE_URL).path.rstrip("/")
-CATS = SITE.get("categories", {})
+CATS = dict(SITE.get("categories", {}))
+CATS.setdefault("cheatsheets", "Cheat sheets")  # added automatically, no settings change needed
 SEV_LABEL = {"critical": "Critical", "high": "High", "medium": "Medium", "low": "Low", "unscored": "Not scored"}
 TONE = {"news": "t-news", "weekly-recap": "t-recap", "exploited-vulnerabilities": "t-exploit",
-        "theory": "t-theory", "practical": "t-practical", "blog": "t-blog"}
+        "theory": "t-theory", "practical": "t-practical", "blog": "t-blog", "cheatsheets": "t-cheat"}
 CAT_INTRO = {
     "news": "The security stories that matter, explained in plain language.",
     "weekly-recap": "Every Monday: the week’s top news, ransomware activity and web defacement in one read.",
     "exploited-vulnerabilities": "Vulnerabilities attackers are using right now, with what to patch first.",
     "theory": "Security concepts made clear, from fundamentals to advanced topics.",
     "practical": "Hands-on, step-by-step guides for defending real systems.",
+    "cheatsheets": "One-page references you can download, print and share.",
 }
 BLOG = []
 ABOUT_IMG = "/assets/cover-900.jpg"
@@ -192,8 +194,9 @@ def share_image(src_path):
         if abs(w / h - ratio) > 0.02:  # crop to the shape link previews use
             if w / h > ratio:
                 nw = int(h * ratio); im = im.crop(((w - nw) // 2, 0, (w - nw) // 2 + nw, h))
-            else:
-                nh = int(w / ratio); im = im.crop((0, (h - nh) // 2, w, (h - nh) // 2 + nh))
+            else:  # taller pictures: keep the top, where titles usually are
+                nh = int(w / ratio); top = 0 if h > w else (h - nh) // 2
+                im = im.crop((0, top, w, top + nh))
         im = im.resize((1200, 630), Image.LANCZOS)
         dest.parent.mkdir(parents=True, exist_ok=True)
         for q in (82, 72, 62, 52):  # keep it small enough for WhatsApp
@@ -331,10 +334,14 @@ def img_tag(src, alt="", w=1200, h=630, lazy=True):
     return f'<img src="{e(src)}" alt="{e(alt)}" width="{w}" height="{h}"{loading} decoding="async">'
 
 
+def thumb(p):
+    return share_image(p["cover"])[0] if p.get("own_image") else p["cover"]
+
+
 def card(p, size="md"):
     """A story card: picture, section, headline, date."""
     href = url(p["path"])
-    pic = img_tag(url(p["cover"]), p.get("cover_alt", ""))
+    pic = img_tag(url(thumb(p)), p.get("cover_alt", ""))
     dek = f'<p class="dek">{e(p["summary"])}</p>' if size in ("lg",) and p["summary"] else ""
     return (f'<article class="card card-{size}"><a class="card-pic" href="{href}" tabindex="-1" aria-hidden="true">{pic}</a>'
             f'<div class="card-body">{kicker(p)}<h3><a href="{href}">{e(p["title"])}</a></h3>{dek}{meta_line(p)}</div></article>')
@@ -343,7 +350,7 @@ def card(p, size="md"):
 def row(p):
     """A list row: small picture on the left, text on the right."""
     href = url(p["path"])
-    return (f'<article class="row"><a class="row-pic" href="{href}" tabindex="-1" aria-hidden="true">{img_tag(url(p["cover"]))}</a>'
+    return (f'<article class="row"><a class="row-pic" href="{href}" tabindex="-1" aria-hidden="true">{img_tag(url(thumb(p)))}</a>'
             f'<div class="row-body">{kicker(p)}<h3><a href="{href}">{e(p["title"])}</a></h3>'
             f'<p class="dek">{e(p["summary"])}</p>{meta_line(p)}</div></article>')
 
@@ -411,7 +418,7 @@ def build_home(posts):
         latest = "".join(f'<li>{kicker(p)}<a href="{url(p["path"])}">{e(p["title"])}</a>'
                          f'<time datetime="{e(p["date"])}">{nice_date(p["date"])}</time></li>' for p in posts[1:7])
         top = (f'<section class="top-grid"><article class="lead">'
-               f'<a class="lead-pic" href="{url(lead["path"])}" tabindex="-1" aria-hidden="true">{img_tag(url(lead["cover"]), "", lazy=False)}</a>'
+               f'<a class="lead-pic" href="{url(lead["path"])}" tabindex="-1" aria-hidden="true">{img_tag(url(thumb(lead)), "", lazy=False)}</a>'
                f'{kicker(lead)}<h1 class="lead-title"><a href="{url(lead["path"])}">{e(lead["title"])}</a></h1>'
                f'<p class="dek">{e(lead["summary"])}</p>{meta_line(lead)}</article>'
                f'<aside class="latest-rail"><h2>Latest</h2><ol>{latest or "<li>New stories appear here once approved.</li>"}</ol></aside></section>')
@@ -505,7 +512,7 @@ def build_post(p, posts):
     <div class="tags">{"".join(tags)}</div>
   </header>
   {keypoints}
-  <figure class="article-cover">{img_tag(url(p['cover']), p['cover_alt'], lazy=False)}</figure>
+  {"" if p["category"] == "cheatsheets" else '<figure class="article-cover">' + img_tag(url(p['cover']), p['cover_alt'], lazy=False) + '</figure>'}
   <div class="prose">{p['html']}</div>
   <section class="share-bottom"><h2>Share this article</h2><ul class="share-list">{share_html}</ul></section>
   {thanks}
@@ -631,6 +638,24 @@ def ensure_banner():
     return True
 
 
+def cheatsheet_copies(posts):
+    from PIL import Image
+    for p in posts:
+        if p["category"] != "cheatsheets" or not p.get("own_image"):
+            continue
+        src = OUT / p["cover"].lstrip("/")
+        if not src.is_file():
+            continue
+        im = Image.open(src).convert("RGB")
+        full = im.copy(); full.thumbnail((1600, 4000))
+        (OUT / "share").mkdir(exist_ok=True)
+        full.save(OUT / "share" / f"full-{p['slug']}.jpg", quality=86, optimize=True, progressive=True)
+        canvas = Image.new("RGB", (1080, 1350), (11, 26, 58))  # Instagram's tallest shape, brand navy around it
+        fit = im.copy(); fit.thumbnail((1020, 1290))
+        canvas.paste(fit, ((1080 - fit.width) // 2, (1350 - fit.height) // 2))
+        canvas.save(OUT / "share" / f"ig-{p['slug']}.jpg", quality=86, optimize=True)
+
+
 def fill_missing_scores(posts):
     """Look up scores that were not published when a briefing was written (official CVE record)."""
     from cve_drafts import cve_record_score
@@ -665,6 +690,7 @@ def main():
             make_cover(OUT / "covers" / f"{p['slug']}.jpg", p["title"], p["category"],
                        p.get("score", ""), p.get("severity", ""), key=p["slug"])
     print(f"Drew {sum(not p['own_image'] for p in posts)} graphic(s)")
+    cheatsheet_copies(posts)
     for p in posts:
         build_post(p, posts)
     build_home(posts)

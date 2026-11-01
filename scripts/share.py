@@ -27,7 +27,8 @@ import urllib.request
 from common import ROOT, USER_AGENT, http_json, load_site, parse_front_matter
 
 SITE = load_site()
-CATEGORY_NAMES = SITE.get("categories", {})
+CATEGORY_NAMES = dict(SITE.get("categories", {}))
+CATEGORY_NAMES.setdefault("cheatsheets", "Cheat sheets")
 BASE_URL = ("https://" + SITE["custom_domain"].strip().strip("/")) if SITE.get("custom_domain") else SITE["url"].rstrip("/")
 env = os.environ.get
 
@@ -81,6 +82,7 @@ HASHTAGS = {
     "exploited-vulnerabilities": "#cybersecurity #vulnerability #patchnow #infosec",
     "theory": "#cybersecurity #learning #infosec",
     "practical": "#cybersecurity #howto #sysadmin #infosec",
+    "cheatsheets": "#cheatsheet #cybersecurity #infosec #sysadmin #learning",
 }
 
 
@@ -110,6 +112,12 @@ def image_url(meta, slug):
 
 
 def facebook(meta, link):
+    if meta.get("category") == "cheatsheets":  # a full photo post shows the whole cheat sheet in the feed
+        graph_post(f"{env('FACEBOOK_PAGE_ID')}/photos", {
+            "url": f"{BASE_URL}/share/full-{meta['_slug']}.jpg",
+            "caption": f"{meta['title']}\n\n{meta.get('summary', '')}\n\nDownload it free: {link}\n\n{HASHTAGS['cheatsheets']}",
+            "access_token": env("FACEBOOK_PAGE_TOKEN")})
+        return
     graph_post(f"{env('FACEBOOK_PAGE_ID')}/feed", {
         "message": f"{meta['title']}\n\n{meta.get('summary', '')}\n\n{HASHTAGS.get(meta.get('category'), '#cybersecurity')}",
         "link": link, "access_token": env("FACEBOOK_PAGE_TOKEN")})
@@ -120,7 +128,8 @@ def instagram(meta, link):
                f"Read the full post on our website (link in bio).\n\n"
                f"{HASHTAGS.get(meta.get('category'), '#cybersecurity')}")[:2200]
     token, account = env("FACEBOOK_PAGE_TOKEN"), env("INSTAGRAM_ACCOUNT_ID")
-    container = graph_post(f"{account}/media", {"image_url": meta["_image"], "caption": caption,
+    image = f"{BASE_URL}/share/ig-{meta['_slug']}.jpg" if meta.get("category") == "cheatsheets" else meta["_image"]
+    container = graph_post(f"{account}/media", {"image_url": image, "caption": caption,
                                                 "access_token": token})["id"]
     for _ in range(12):  # Instagram needs a moment to fetch the picture
         status = graph_get(container, {"fields": "status_code", "access_token": token}).get("status_code")
@@ -157,7 +166,7 @@ def article_html(meta, link):
 
 
 def blogger(meta, link):
-    cats = (SITE.get("blogger") or {}).get("categories", ["theory", "practical", "weekly-recap"])
+    cats = (SITE.get("blogger") or {}).get("categories", ["theory", "practical", "weekly-recap", "cheatsheets"])
     if meta.get("category") not in cats:
         raise SkipChannel("this section is not sent to the blog (see blogger.categories in site.json)")
     token = google_token()
@@ -199,7 +208,7 @@ def linkedin(meta, link):
 
 # ---------------- Share kit for WhatsApp Channels and TikTok (no public posting API)
 def share_kit(meta, link):
-    cats = (SITE.get("share_kit") or {}).get("categories", ["theory", "practical", "weekly-recap"])
+    cats = (SITE.get("share_kit") or {}).get("categories", ["theory", "practical", "weekly-recap", "cheatsheets"])
     if meta.get("category") not in cats:
         raise SkipChannel("no share kit for this section")
     repo = env("GITHUB_REPOSITORY")
@@ -207,7 +216,10 @@ def share_kit(meta, link):
     tags = HASHTAGS.get(meta.get("category"), "#cybersecurity")
     whatsapp = f"{link}\n\n*{meta['title']}*\n\n{meta.get('summary', '')}"
     tiktok = f"{meta['title']} 🔐\n{meta.get('summary', '')[:150]}\nFull article: link in bio\n{tags} #fyp #techtok"
-    pics = "\n".join(f"{i}. {BASE_URL}/{s}" for i, s in enumerate(slides, 1)) or f"1. {meta['_image']}"
+    if meta.get("category") == "cheatsheets":
+        pics = f"1. {BASE_URL}/share/full-{meta['_slug']}.jpg (full cheat sheet)\n2. {BASE_URL}/share/ig-{meta['_slug']}.jpg (square-ish version)"
+    else:
+        pics = "\n".join(f"{i}. {BASE_URL}/{s}" for i, s in enumerate(slides, 1)) or f"1. {meta['_image']}"
     body = f"""Your article is live: {link}
 
 ## 💬 WhatsApp Channel
@@ -268,6 +280,7 @@ def main():
             continue
         meta, body = parse_front_matter(path.read_text(encoding="utf-8"))
         meta["_body"] = body
+        meta["_slug"] = path.stem
         link = f"{BASE_URL}/posts/{path.stem}/"
         meta["_image"] = image_url(meta, path.stem)
         for name, fn in active:
