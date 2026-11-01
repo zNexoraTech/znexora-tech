@@ -86,6 +86,49 @@ def convert_docx(path, slug):
 
 
 # ---------------------------------------------------------------- PowerPoint
+def pptx_text(path):
+    """Read the words on each slide so a slides-only article still has readable, searchable text.
+    Returns (title, summary, markdown)."""
+    from pptx import Presentation
+    deck = Presentation(str(path))
+    slides = []
+    for slide in deck.slides:
+        title, lines = "", []
+        for shape in slide.shapes:
+            if not shape.has_text_frame:
+                continue
+            is_title = shape.is_placeholder and shape.placeholder_format.type is not None and \
+                "TITLE" in str(shape.placeholder_format.type) and "SUB" not in str(shape.placeholder_format.type)
+            for para in shape.text_frame.paragraphs:
+                text = " ".join(r.text for r in para.runs).strip()
+                if not text:
+                    continue
+                if is_title and not title:
+                    title = text
+                else:
+                    lines.append((para.level, text))
+        notes = ""
+        if slide.has_notes_slide:
+            notes = slide.notes_slide.notes_text_frame.text.strip()
+        slides.append((title, lines, notes))
+    if not slides:
+        return "", "", ""
+    first_title, first_lines, _ = slides[0]
+    summary = " ".join(t for _, t in first_lines)[:220] or (" ".join(t for _, t in slides[1][1])[:220] if len(slides) > 1 else "")
+    parts = []
+    for title, lines, notes in slides[1:]:
+        if not (title or lines or notes):
+            continue
+        block = [f"### {title}"] if title else []
+        block += [f"{'    ' * min(level, 2)}- {text}" for level, text in lines]
+        if notes:
+            block.append("\n" + notes)
+        parts.append("\n".join(block))
+    body = ("## Key points\n\n" + "\n\n".join(parts)) if parts else ""
+    return first_title, summary, body
+
+
+
 def soffice():
     return shutil.which("soffice") or shutil.which("libreoffice")
 
@@ -140,6 +183,11 @@ def make_article(section, name, files, site):
     if slug != slug_hint and (IMAGES / slug_hint).exists():  # keep pictures under the final name
         (IMAGES / slug_hint).rename(IMAGES / slug)
         body = body.replace(f"/images/{slug_hint}/", f"/images/{slug}/")
+    if pptx and not docx:  # slides only: take the title, summary and text from the slides
+        p_title, p_summary, p_body = pptx_text(pptx)
+        if p_title:
+            title, slug = p_title, slugify(p_title)
+        summary, body = p_summary, p_body
     slides_md = ""
     if pptx:
         slides_md, _ = convert_pptx(pptx, slug)
