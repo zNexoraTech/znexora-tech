@@ -598,5 +598,185 @@
   "sector": "Technology",
   "country": "US",
   "date": "2026-10-27"
+ },
+ "4dfbb74e18fe58d2": {
+  "group": "qilin",
+  "sector": "Other",
+  "country": "US",
+  "date": "2026-11-01"
+ },
+ "5c04e39d53309cd2": {
+  "group": "Vexy Ransomware",
+  "sector": "Not Found",
+  "country": "BD",
+  "date": "2026-10-31"
+ },
+ "d269b2285b6b5020": {
+  "group": "Vexy Ransomware",
+  "sector": "Technology",
+  "country": "BG",
+  "date": "2026-10-31"
+ },
+ "cb50c03a3485ef61": {
+  "group": "emperador",
+  "sector": "Retail & E-Commerce",
+  "country": "BR",
+  "date": "2026-10-31"
+ },
+ "c8103b029cf85685": {
+  "group": "payload",
+  "sector": "Retail & E-Commerce",
+  "country": "??",
+  "date": "2026-10-31"
+ },
+ "824e23813ca536a1": {
+  "group": "payload",
+  "sector": "Education",
+  "country": "DE",
+  "date": "2026-10-31"
+ },
+ "f0864e38f3f889f8": {
+  "group": "payload",
+  "sector": "Government & Defense",
+  "country": "DE",
+  "date": "2026-10-31"
+ },
+ "fea1382e79e4eaf5": {
+  "group": "rhysida",
+  "sector": "Education",
+  "country": "US",
+  "date": "2026-10-31"
+ },
+ "5975b5136daf2c1e": {
+  "group": "sarcoma",
+  "sector": "Retail & E-Commerce",
+  "country": "PH",
+  "date": "2026-10-31"
+ },
+ "e438424415c8cd15": {
+  "group": "Whitearmor",
+  "sector": "Other",
+  "country": "??",
+  "date": "2026-10-31"
+ },
+ "bceb14f3ed4ad4d3": {
+  "group": "emperador",
+  "sector": "Manufacturing",
+  "country": "CH",
+  "date": "2026-10-31"
+ },
+ "a9530ea51c2a5985": {
+  "group": "safepay",
+  "sector": "Other",
+  "country": "EC",
+  "date": "2026-10-31"
+ },
+ "a91261004c7829e8": {
+  "group": "safepay",
+  "sector": "Manufacturing",
+  "country": "TW",
+  "date": "2026-10-31"
+ },
+ "7d5c95d3e7f558c7": {
+  "group": "safepay",
+  "sector": "Transportation",
+  "country": "US",
+  "date": "2026-10-31"
+ },
+ "b6a00c5104f3a612": {
+  "group": "safepay",
+  "sector": "Other",
+  "country": "PE",
+  "date": "2026-10-31"
+ },
+ "92680bf8c645201b": {
+  "group": "safepay",
+  "sector": "Education",
+  "country": "JP",
+  "date": "2026-10-31"
+ },
+ "2c58a4b1d2ad46b9": {
+  "group": "safepay",
+  "sector": "Other",
+  "country": "AR",
+  "date": "2026-10-31"
+ },
+ "cbc2cfe371be3d9d": {
+  "group": "safepay",
+  "sector": "Agriculture and Food Production",
+  "country": "TW",
+  "date": "2026-10-31"
+ },
+ "660da736ab561da1": {
+  "group": "safepay",
+  "sector": "Not Found",
+  "country": "IL",
+  "date": "2026-10-31"
+ },
+ "0f10c944127fd84f": {
+  "group": "safepay",
+  "sector": "Education",
+  "country": "MX",
+  "date": "2026-10-31"
+ },
+ "5e369d338622e2dc": {
+  "group": "N0n",
+  "sector": "Technology",
+  "country": "MY",
+  "date": "2026-10-31"
+ },
+ "9eb5a829f4db09b0": {
+  "group": "thegentlemen",
+  "sector": "Not Found",
+  "country": "US",
+  "date": "2026-10-31"
+ },
+ "f3fd8925f50e7b2e": {
+  "group": "nightspire",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-31"
+ },
+ "8b0947a9a5399d15": {
+  "group": "AuditTeam",
+  "sector": "Not Found",
+  "country": "NL",
+  "date": "2026-10-31"
+ },
+ "19086af01fe4579f": {
+  "group": "AuditTeam",
+  "sector": "Not Found",
+  "country": "SG",
+  "date": "2026-10-31"
+ },
+ "4f4dbd8ab0759ada": {
+  "group": "AuditTeam",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-31"
+ },
+ "8f4f150c90379416": {
+  "group": "AuditTeam",
+  "sector": "Not Found",
+  "country": "??",
+  "date": "2026-10-31"
+ },
+ "05df3b19baed0919": {
+  "group": "thegentlemen",
+  "sector": "Technology",
+  "country": "AR",
+  "date": "2026-10-31"
+ },
+ "66e449281d8bb512": {
+  "group": "thegentlemen",
+  "sector": "Technology",
+  "country": "US",
+  "date": "2026-10-31"
+ },
+ "7a53f4bde29e2ba2": {
+  "group": "thegentlemen",
+  "sector": "Government & Defense",
+  "country": "FR",
+  "date": "2026-10-31"
  }
 }
