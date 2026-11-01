@@ -15,6 +15,7 @@ PowerPoint   -> a PDF download, a slide gallery, and the first slide as the cove
 """
 import argparse
 import hashlib
+import io
 import re
 import shutil
 import subprocess
@@ -88,90 +89,163 @@ def convert_docx(path, slug):
 
 
 # ---------------------------------------------------------------- PowerPoint
-def pptx_text(path):
-    """Read the words on each slide so a slides-only article still has readable, searchable text.
-    Returns (title, summary, markdown)."""
+def _shapes(shapes):
+    """All shapes on a slide, including those inside groups."""
+    for shape in shapes:
+        if shape.shape_type == 6:  # group
+            yield from _shapes(shape.shapes)
+        else:
+            yield shape
+
+
+def read_slides(path):
+    """Titles, bullet points and photos from each slide. Speaker notes are left out on purpose."""
     from pptx import Presentation
     deck = Presentation(str(path))
-    slides = []
+    slides, counts = [], {}
     for slide in deck.slides:
-        title, lines = "", []
-        for shape in slide.shapes:
-            if not shape.has_text_frame:
-                continue
-            is_title = shape.is_placeholder and shape.placeholder_format.type is not None and \
-                "TITLE" in str(shape.placeholder_format.type) and "SUB" not in str(shape.placeholder_format.type)
-            for para in shape.text_frame.paragraphs:
-                text = " ".join(r.text for r in para.runs).strip()
-                if not text:
-                    continue
-                if is_title and not title:
-                    title = text
-                else:
-                    lines.append((para.level, text))
-        notes = ""
-        if slide.has_notes_slide:
-            notes = slide.notes_slide.notes_text_frame.text.strip()
-        slides.append((title, lines, notes))
-    if not slides:
-        return "", "", ""
-    first_title, first_lines, _ = slides[0]
-    summary = " ".join(t for _, t in first_lines)[:220] or (" ".join(t for _, t in slides[1][1])[:220] if len(slides) > 1 else "")
-    parts = []
-    for title, lines, notes in slides[1:]:
-        if not (title or lines or notes):
-            continue
-        block = [f"### {title}"] if title else []
-        block += [f"{'    ' * min(level, 2)}- {text}" for level, text in lines]
-        if notes:
-            block.append("\n" + notes)
-        parts.append("\n".join(block))
-    body = ("## Key points\n\n" + "\n\n".join(parts)) if parts else ""
-    return first_title, summary, body
+        title, lines, pics = "", [], []
+        for shape in _shapes(slide.shapes):
+            if getattr(shape, "has_text_frame", False) and shape.has_text_frame:
+                ptype = str(shape.placeholder_format.type) if shape.is_placeholder else ""
+                is_title = "TITLE" in ptype and "SUB" not in ptype
+                for para in shape.text_frame.paragraphs:
+                    text = "".join(r.text for r in para.runs).strip()
+                    if not text:
+                        continue
+                    if is_title and not title:
+                        title = text
+                    else:
+                        lines.append((para.level, text))
+            image = getattr(shape, "image", None) if shape.shape_type in (13, 14) or hasattr(shape, "image") else None
+            try:
+                if image is not None:
+                    blob = image.blob
+                    key = hashlib.sha1(blob).hexdigest()
+                    counts[key] = counts.get(key, 0) + 1
+                    pics.append((key, blob))
+            except Exception:
+                pass
+        slides.append({"title": title, "lines": lines, "pics": pics})
+    for sl in slides:  # drop logos repeated on many slides
+        sl["pics"] = [(k, b) for k, b in sl["pics"] if counts.get(k, 0) < 3]
+    return slides
 
+
+def save_picture(blob, dest_base):
+    """Save an embedded photo as PNG/JPG for the web. Returns the file name, or "" if unusable."""
+    from PIL import Image
+    try:
+        im = Image.open(io.BytesIO(blob))
+        im.load()
+    except Exception:
+        return ""
+    if im.width < 160 or im.height < 160:  # icons and bullets, not photos
+        return ""
+    ext = "jpg" if im.format == "JPEG" else "png"
+    if im.mode not in ("RGB", "RGBA", "L", "P"):
+        im = im.convert("RGBA")
+    if ext == "jpg" and im.mode != "RGB":
+        im = im.convert("RGB")
+    im.thumbnail((1600, 1600))
+    dest = dest_base.with_suffix("." + ext)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    im.save(dest, quality=85) if ext == "jpg" else im.save(dest, optimize=True)
+    return dest.name
 
 
 def soffice():
     return shutil.which("soffice") or shutil.which("libreoffice")
 
 
-def convert_pptx(path, slug):
-    """Returns (markdown for the slides section, cover file or None)."""
-    from PIL import Image
+def render_slides(path, slug):
+    """Turn every slide into a picture and the deck into a PDF. Returns (has_pdf, [slide picture names])."""
     if not soffice():
-        print("  LibreOffice is not installed; skipping the slides.")
-        return "", None
+        print("  LibreOffice is not installed, so slide pictures are skipped (photos are taken from the file instead).")
+        return False, []
     work = Path(tempfile.mkdtemp())
-    subprocess.run([soffice(), "--headless", "--convert-to", "pdf", "--outdir", str(work), str(path)],
-                   check=True, capture_output=True, timeout=300)
-    pdf = next(work.glob("*.pdf"))
-    FILES.mkdir(parents=True, exist_ok=True)
-    shutil.copy(pdf, FILES / f"{slug}.pdf")
-    subprocess.run(["pdftoppm", "-jpeg", "-jpegopt", "quality=82", "-scale-to", "1280", str(pdf), str(work / "s")],
-                   check=True, capture_output=True, timeout=300)
-    slides = sorted(work.glob("s-*.jpg"), key=lambda p: int(re.findall(r"\d+", p.stem)[-1]))
-    folder = IMAGES / slug / "slides"
-    folder.mkdir(parents=True, exist_ok=True)
-    names = []
-    for i, s in enumerate(slides, 1):
-        name = f"slide-{i}.jpg"
-        shutil.copy(s, folder / name)
-        names.append(name)
-    cover = None
-    if names:  # first slide becomes the cover, cropped to the 1200 x 630 shape used for previews
-        im = Image.open(folder / names[0]).convert("RGB")
-        ratio = 1200 / 630
-        w, h = im.size
-        if w / h > ratio:
-            nw = int(h * ratio); im = im.crop(((w - nw) // 2, 0, (w - nw) // 2 + nw, h))
-        else:
-            nh = int(w / ratio); im = im.crop((0, (h - nh) // 2, w, (h - nh) // 2 + nh))
-        cover = IMAGES / f"{slug}.jpg"
-        im.resize((1200, 630), Image.LANCZOS).save(cover, quality=85, optimize=True)
-    gallery = "\n\n".join(f"![Slide {i}](../../assets/images/{slug}/slides/{n})" for i, n in enumerate(names, 1))
-    md = (f"## Slides\n\n[Download the slides as PDF](../../assets/files/{slug}.pdf)\n\n{gallery}") if names else ""
-    shutil.rmtree(work, ignore_errors=True)
-    return md, cover
+    try:
+        subprocess.run([soffice(), "--headless", "--convert-to", "pdf", "--outdir", str(work), str(path)],
+                       check=True, capture_output=True, timeout=300)
+        pdf = next(work.glob("*.pdf"))
+        FILES.mkdir(parents=True, exist_ok=True)
+        shutil.copy(pdf, FILES / f"{slug}.pdf")
+        subprocess.run(["pdftoppm", "-jpeg", "-jpegopt", "quality=82", "-scale-to", "1280", str(pdf), str(work / "s")],
+                       check=True, capture_output=True, timeout=300)
+        rendered = sorted(work.glob("s-*.jpg"), key=lambda p: int(re.findall(r"\d+", p.stem)[-1]))
+        folder = IMAGES / slug / "slides"
+        folder.mkdir(parents=True, exist_ok=True)
+        names = []
+        for i, sl in enumerate(rendered, 1):
+            shutil.copy(sl, folder / f"slide-{i}.jpg")
+            names.append(f"slide-{i}.jpg")
+        print(f"  {len(names)} slide picture(s) and a PDF created.")
+        return True, names
+    except Exception as exc:
+        print(f"  Slide conversion failed ({exc}); using the photos inside the file instead.")
+        return False, []
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def make_cover_from(src, slug):
+    from PIL import Image
+    im = Image.open(src).convert("RGB")
+    ratio = 1200 / 630
+    w, h = im.size
+    if w / h > ratio:
+        nw = int(h * ratio); im = im.crop(((w - nw) // 2, 0, (w - nw) // 2 + nw, h))
+    else:
+        nh = int(w / ratio); top = 0 if h > w else (h - nh) // 2; im = im.crop((0, top, w, top + nh))
+    im.resize((1200, 630), Image.LANCZOS).save(IMAGES / f"{slug}.jpg", quality=85, optimize=True)
+
+
+def pptx_article(path, slug, with_text):
+    """Markdown for a deck. with_text=True (slides only): one section per slide with its picture and points.
+    with_text=False (a Word file has the text): a slide gallery. Returns (title, summary, markdown)."""
+    slides = read_slides(path)
+    has_pdf, rendered = render_slides(path, slug)
+    pic_dir = IMAGES / slug / "photos"
+
+    def pictures_for(i, sl):
+        if i <= len(rendered):
+            return [f"../../assets/images/{slug}/slides/{rendered[i - 1]}"]
+        names = [save_picture(blob, pic_dir / f"slide{i}-{n}") for n, (_, blob) in enumerate(sl["pics"], 1)]
+        return [f"../../assets/images/{slug}/photos/{n}" for n in names if n]
+
+    # cover: slide 1 picture, or the first photo in the deck
+    if rendered:
+        make_cover_from(IMAGES / slug / "slides" / rendered[0], slug)
+    else:
+        for i, sl in enumerate(slides, 1):
+            pics = pictures_for(i, sl)
+            if pics:
+                make_cover_from(IMAGES / pics[0].split("/assets/images/")[1], slug)
+                break
+
+    title = slides[0]["title"] if slides else ""
+    first_text = " ".join(t for _, t in slides[0]["lines"]) if slides else ""
+    summary = first_text[:220]
+    parts = []
+    if has_pdf:
+        parts.append(f"[Download the slides as PDF](../../assets/files/{slug}.pdf)")
+    if with_text:
+        for i, sl in enumerate(slides, 1):
+            if i == 1:
+                continue  # the title slide is the article's title, summary and cover
+            block = [f"## {sl['title'] or f'Slide {i}'}"]
+            block += [f"![{sl['title'] or f'Slide {i}'}]({src})" for src in pictures_for(i, sl)]
+            if sl["lines"]:
+                block.append("\n".join(f"{'    ' * min(level, 2)}- {text}" for level, text in sl["lines"]))
+            parts.append("\n\n".join(block))
+    else:
+        gallery = [f"![Slide {i}]({src})" for i, sl in enumerate(slides, 1) for src in pictures_for(i, sl)]
+        if gallery:
+            parts.insert(0, "## Slides")
+            parts += gallery
+    if not summary and len(slides) > 1:
+        summary = " ".join(t for _, t in slides[1]["lines"])[:220]
+    return title, summary, "\n\n".join(parts)
 
 
 # ---------------------------------------------------------------- drafts
@@ -186,14 +260,14 @@ def make_article(section, name, files, site):
     if slug != slug_hint and (IMAGES / slug_hint).exists():  # keep pictures under the final name
         (IMAGES / slug_hint).rename(IMAGES / slug)
         body = body.replace(f"/images/{slug_hint}/", f"/images/{slug}/")
-    if pptx and not docx:  # slides only: take the title, summary and text from the slides
-        p_title, p_summary, p_body = pptx_text(pptx)
-        if p_title:
-            title, slug = p_title, slugify(p_title)
-        summary, body = p_summary, p_body
     slides_md = ""
-    if pptx:
-        slides_md, _ = convert_pptx(pptx, slug)
+    if pptx and not docx:  # slides only: title, summary and sections come from the slides
+        first = read_slides(pptx)[:1]
+        if first and first[0]["title"]:
+            title, slug = first[0]["title"], slugify(first[0]["title"])
+        _, summary, body = pptx_article(pptx, slug, with_text=True)
+    elif pptx:  # a Word file has the text; the slides become a gallery
+        _, _, slides_md = pptx_article(pptx, slug, with_text=False)
     if picture:  # a cheat sheet or infographic: shown in full, downloadable, and used as the cover
         IMAGES.mkdir(parents=True, exist_ok=True)
         dest = IMAGES / f"{slug}{picture.suffix.lower()}"
@@ -220,6 +294,8 @@ def main():
     args = ap.parse_args()
     site, _, _ = automation("articles")
     done = load_json("imported.json", {})
+    # forget files that are no longer in the inbox (already published), so the same file can be uploaded again
+    done = {k: v for k, v in done.items() if (ROOT / k).exists()}
     todo = {k: v for k, v in groups().items()
             if any(done.get(str(p.relative_to(ROOT))) != file_hash(p) for p in v.values())}
     if not todo:
