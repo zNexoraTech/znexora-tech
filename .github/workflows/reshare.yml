@@ -1,0 +1,55 @@
+name: Share an article again
+
+on:
+  workflow_dispatch:
+    inputs:
+      article:
+        description: "Article address or name, e.g. is-edr-alone-enough-why-do-we-need-xdr"
+        required: true
+      channels:
+        description: "Where to send it: Blogger, LinkedIn, Facebook, Instagram, Telegram, Share kit, or all"
+        required: true
+        default: "Blogger"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  share:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Find the article
+        id: find
+        env:
+          ARTICLE: ${{ github.event.inputs.article }}
+        run: |
+          NAME=$(printf '%s' "$ARTICLE" | sed -E 's#\?.*$##; s#/+$##; s#^.*/##; s#\.md$##' | tr -cd 'a-z0-9-')
+          if [ ! -f "content/posts/$NAME.md" ]; then echo "No article named '$NAME' in content/posts"; exit 1; fi
+          echo "file=content/posts/$NAME.md" >> "$GITHUB_OUTPUT"
+      - name: Share it
+        run: python scripts/share.py
+        env:
+          NEW_POSTS: ${{ steps.find.outputs.file }}
+          ONLY_CHANNELS: ${{ github.event.inputs.channels }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          MASTODON_INSTANCE: ${{ secrets.MASTODON_INSTANCE }}
+          MASTODON_TOKEN: ${{ secrets.MASTODON_TOKEN }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          FACEBOOK_PAGE_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+          LINKEDIN_TOKEN: ${{ secrets.LINKEDIN_TOKEN }}
+          LINKEDIN_AUTHOR: ${{ secrets.LINKEDIN_AUTHOR }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
