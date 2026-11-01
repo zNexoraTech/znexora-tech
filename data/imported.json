@@ -17,5 +17,11 @@
  "inbox/theory/Web Defacement Awareness.pptx": "325cf9c5f36a856b7795eb72538b0cdd1689d314",
  "inbox/theory/What Happens After You Click.pptx": "3307222afa0b8ea530ad720a7caf9f67d46bac7f",
  "inbox/theory/WindowsHardening.pptx": "9b5750f35ec91e8606d17287a128a53fb419857d",
- "inbox/theory/macOS Security Hardening.pptx": "0201b8f2a4d2b772ead7bb6f566931de84acce1d"
+ "inbox/theory/macOS Security Hardening.pptx": "0201b8f2a4d2b772ead7bb6f566931de84acce1d",
+ "inbox/cheatsheets/Active Directory Security Assessment Cheat Sheet.png": "e08eeaabe51388a25c5d3a689bca218aae2b14d7",
+ "inbox/cheatsheets/Linux Command Cheat Sheet.png": "214adb51982f8c732be189d2b2816f81e9cf3036",
+ "inbox/cheatsheets/Linux Hardening Command Cheat Sheet.png": "87c26b9b0b196b6257e1d71733d49553f52b6993",
+ "inbox/cheatsheets/NetworkHardeningCheatSheet.png": "5ffdf187d8bb18becb1fca179376c9488c75d83f",
+ "inbox/cheatsheets/OWASP LLM01 Prompt Injection Cheat Sheet.png": "686725fdfe40da366b73426ed0c0adaaf891fe70",
+ "inbox/cheatsheets/OWASP LLM02 Sensitive Information Disclosure Cheat Sheet.png": "9a6e5d77a416f59846438deeceb4c14643a626ba"
 }
