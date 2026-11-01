@@ -54,7 +54,10 @@ def groups():
         if section not in SECTIONS:
             section = "theory"
         kind = "picture" if path.suffix.lower() in PICTURES else path.suffix.lower()[1:]
-        found.setdefault((section, path.stem.strip()), {})[kind] = path
+        key = re.sub(r"[^0-9a-z\u3040-\u30ff\u4e00-\u9fff]+", " ", path.stem.lower()).strip()
+        entry = found.setdefault((section, key), {})
+        entry.setdefault("_name", path.stem.strip())
+        entry[kind] = path
     return found
 
 
@@ -114,8 +117,15 @@ def read_slides(path):
     deck = Presentation(str(path))
     slides, counts = [], {}
     for slide in deck.slides:
-        title, lines, pics = "", [], []
+        title, lines, pics, tables = "", [], [], []
         for shape in _shapes(slide.shapes):
+            if getattr(shape, "has_table", False) and shape.has_table:
+                rows = [[c.text.strip().replace("|", "/").replace("\n", " ") for c in r.cells] for r in shape.table.rows]
+                if rows:
+                    md = ["| " + " | ".join(rows[0]) + " |", "|" + " --- |" * len(rows[0])]
+                    md += ["| " + " | ".join(r) + " |" for r in rows[1:]]
+                    tables.append("\n".join(md))
+                continue
             if getattr(shape, "has_text_frame", False) and shape.has_text_frame:
                 ptype = str(shape.placeholder_format.type) if shape.is_placeholder else ""
                 is_title = "TITLE" in ptype and "SUB" not in ptype
@@ -136,10 +146,76 @@ def read_slides(path):
                     pics.append((key, blob))
             except Exception:
                 pass
-        slides.append({"title": title, "lines": lines, "pics": pics})
+        slides.append({"title": title, "lines": lines, "pics": pics, "tables": tables})
     for sl in slides:  # drop logos repeated on many slides
         sl["pics"] = [(k, b) for k, b in sl["pics"] if counts.get(k, 0) < 3]
     return slides
+
+
+def _words(t):
+    return len(t.split())
+
+
+def _is_label(t):
+    """A short heading such as 'Contain', 'Oct 9' or '500+' (not a sentence)."""
+    return _words(t) <= 5 and not t.rstrip().endswith((".", ";", ":")) and not t.startswith(("http", "Source"))
+
+
+def slide_text(lines):
+    """Readable text from a slide's text boxes: drops section labels ('REMEDIATION') and step numbers ('01'),
+    joins headings with their descriptions, turns links into links, and collects 'Sources:' lines."""
+    texts = [t for _, t in lines]
+    if texts and texts[0].isupper() and _words(texts[0]) <= 6:
+        texts = texts[1:]                                       # the small section label above the title
+    texts = [t for t in texts if not re.fullmatch(r"\d{1,2}", t.strip())]  # step numbers like 01, 02
+    sources = [t for t in texts if re.match(r"(?i)sources?:", t)]
+    texts = [t for t in texts if t not in sources]
+    merged = []                                                 # 'Label' followed by a web address -> a link
+    for t in texts:
+        if t.startswith(("http://", "https://")) and merged and not merged[-1].startswith("http"):
+            merged[-1] = f"[{merged[-1]}]({t})"
+        else:
+            merged.append(t)
+    def strong(t):   # dates, numbers and statistics: things that clearly label what follows
+        return bool(re.fullmatch(r"(\d{1,2} [A-Z][a-z]{2}|[A-Z][a-z]{2} \d{1,2}|[\d.,+%$¥–-]+[A-Za-z]{0,3}|\d{1,2}[–-]\d{1,2} [A-Z][a-z]{2})", t.strip()))
+
+    def weak(t):     # a short phrase in sentence form, e.g. 'First exploitation attempts observed'
+        return _is_label(t) and not strong(t) and any(w[:1].islower() for w in t.split()[1:])
+
+    def is_id(t):    # identifiers such as CVE numbers are never paired with a nearby sentence
+        return bool(re.fullmatch(r"CVE-\d{4}-\d+", t.strip()))
+
+    out, i = [], 0
+    while i < len(merged):
+        labels = []
+        while i < len(merged) and _is_label(merged[i]) and not merged[i].startswith("["):
+            labels.append(merged[i]); i += 1
+        descs = []
+        while i < len(merged) and not (_is_label(merged[i]) and not merged[i].startswith("[")):
+            descs.append(merged[i]); i += 1
+        if len(labels) > 1 and len(labels) == len(descs) and not any(map(is_id, labels)):
+            out += [f"- **{l}:** {d}" for l, d in zip(labels, descs)]   # e.g. three headings, then three descriptions
+            continue
+        pending, j = [], 0
+        while j < len(labels):                                    # 'Oct 17' + 'First attempts observed'
+            if strong(labels[j]) and j + 1 < len(labels) and weak(labels[j + 1]):
+                out.append(f"- **{labels[j]}:** {labels[j + 1]}"); j += 2
+            else:
+                pending.append(labels[j]); j += 1
+        if pending and descs and not is_id(pending[-1]) and not weak(pending[-1]):
+            last = pending.pop()
+            out += [f"- {l}" for l in pending]
+            out.append(f"- **{last}:** {descs[0]}")
+            descs = descs[1:]
+        else:
+            out += [f"- {l}" for l in pending]
+        out += [f"- {d}" for d in descs]
+    if len(out) == 1 and not out[0].startswith("- **"):        # a single statement reads better as a paragraph
+        out = [out[0][2:]]
+    text = "\n".join(out)
+    text = re.sub(r"\n(?!- )", "\n\n", text)                     # paragraphs get blank lines around them
+    text = re.sub(r"(?m)^(?!- )(.+)\n(?=- )", r"\1\n\n", text)
+    return text.strip(), ("*" + " ".join(sources) + "*" if sources else "")
 
 
 def save_picture(blob, dest_base):
@@ -245,8 +321,8 @@ def pptx_article(path, slug, with_text):
                 continue  # the title slide is the article's title, summary and cover
             block = [f"## {sl['title'] or f'Slide {i}'}"]
             block += [f"![{sl['title'] or f'Slide {i}'}]({src})" for src in pictures_for(i, sl)]
-            if sl["lines"]:
-                block.append("\n".join(f"{'    ' * min(level, 2)}- {text}" for level, text in sl["lines"]))
+            text, sources = slide_text(sl["lines"]) if sl["lines"] else ("", "")
+            block += [x for x in [text] + sl.get("tables", []) + [sources] if x]
             parts.append("\n\n".join(block))
     else:
         gallery = [f"![Slide {i}]({src})" for i, sl in enumerate(slides, 1) for src in pictures_for(i, sl)]
@@ -327,7 +403,8 @@ def main():
     done = load_json("imported.json", {})
     # forget files that are no longer in the inbox (already published), so the same file can be uploaded again
     done = {k: v for k, v in done.items() if (ROOT / k).exists()}
-    todo = {k: v for k, v in groups().items()
+    todo = {(sec, files.pop("_name", key)): files for (sec, key), files in groups().items()}
+    todo = {k: v for k, v in todo.items()
             if any(done.get(str(p.relative_to(ROOT))) != file_hash(p) for p in v.values())}
     if not todo:
         return print("Nothing new in the inbox.")
