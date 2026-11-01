@@ -100,10 +100,13 @@ def graph_get(path, fields):
 
 
 def image_url(meta, slug):
+    """The small JPEG preview made by the website build (works for Instagram, WhatsApp and LinkedIn)."""
     own = pathlib.Path(meta.get("image", "")).name
+    if not own:
+        own = next((f"{slug}{x}" for x in (".jpg", ".jpeg", ".png", ".webp") if (ROOT / "assets" / "images" / f"{slug}{x}").is_file()), "")
     if own and (ROOT / "assets" / "images" / own).is_file():
-        return f"{BASE_URL}/assets/images/{own}"
-    return f"{BASE_URL}/covers/{slug}.jpg"
+        return f"{BASE_URL}/share/assets-images-{own.rsplit('.', 1)[0]}.jpg"
+    return f"{BASE_URL}/share/covers-{slug}.jpg"
 
 
 def facebook(meta, link):
@@ -202,13 +205,13 @@ def share_kit(meta, link):
     repo = env("GITHUB_REPOSITORY")
     slides = re.findall(r"\(\.\./\.\./(assets/images/[^)]+/slides/slide-\d+\.jpg)\)", meta.get("_body", ""))
     tags = HASHTAGS.get(meta.get("category"), "#cybersecurity")
-    whatsapp = f"*{meta['title']}*\n\n{meta.get('summary', '')}\n\nRead more: {link}"
+    whatsapp = f"{link}\n\n*{meta['title']}*\n\n{meta.get('summary', '')}"
     tiktok = f"{meta['title']} 🔐\n{meta.get('summary', '')[:150]}\nFull article: link in bio\n{tags} #fyp #techtok"
     pics = "\n".join(f"{i}. {BASE_URL}/{s}" for i, s in enumerate(slides, 1)) or f"1. {meta['_image']}"
     body = f"""Your article is live: {link}
 
 ## 💬 WhatsApp Channel
-Open your channel in WhatsApp, paste this message, and send:
+Open your channel in WhatsApp and paste this message. **Wait 2-3 seconds until the link card with the picture appears**, then send:
 ```
 {whatsapp}
 ```

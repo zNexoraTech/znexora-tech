@@ -176,12 +176,43 @@ def header_cover():
             f'<img src="{url("/assets/cover-banner-900.jpg")}" alt="" width="900" height="413"></a>')
 
 
+def share_image(src_path):
+    """Return a preview picture that WhatsApp, Facebook and LinkedIn accept: 1200 x 630 JPEG,
+    well under 300 KB, saved under /share/. Falls back to the site-wide preview picture."""
+    from PIL import Image
+    src = OUT / src_path.lstrip("/")
+    if not src.is_file():
+        return "/assets/og-image.jpg", 1200, 628
+    name = "/share/" + src_path.strip("/").replace("/", "-").rsplit(".", 1)[0] + ".jpg"
+    dest = OUT / name.lstrip("/")
+    if not dest.is_file():
+        im = Image.open(src).convert("RGB")
+        ratio = 1200 / 630
+        w, h = im.size
+        if abs(w / h - ratio) > 0.02:  # crop to the shape link previews use
+            if w / h > ratio:
+                nw = int(h * ratio); im = im.crop(((w - nw) // 2, 0, (w - nw) // 2 + nw, h))
+            else:
+                nh = int(w / ratio); im = im.crop((0, (h - nh) // 2, w, (h - nh) // 2 + nh))
+        im = im.resize((1200, 630), Image.LANCZOS)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        for q in (82, 72, 62, 52):  # keep it small enough for WhatsApp
+            im.save(dest, "JPEG", quality=q, optimize=True, progressive=True)
+            if dest.stat().st_size <= 280_000:
+                break
+    return name, 1200, 630
+
+
 # ---------------------------------------------------------------- page frame
 def layout(title, body, description="", path="/", og_type="website", image="/assets/og-image.jpg"):
     full_title = title if title == SITE["name"] else f"{title} | {SITE['name']}"
     desc = description or SITE["description"]
     canonical = BASE_URL + path
-    image_abs = image if image.startswith("https://") else BASE_URL + image
+    if image.startswith("https://"):
+        image_abs, img_w, img_h = image, 1200, 630
+    else:
+        small, img_w, img_h = share_image(image)
+        image_abs = BASE_URL + small
 
     def nav_link(href, label):
         here = ' aria-current="page"' if path == href else ""
@@ -210,6 +241,14 @@ def layout(title, body, description="", path="/", og_type="website", image="/ass
 <meta property="og:url" content="{e(canonical)}">
 <meta property="og:site_name" content="{e(SITE['name'])}">
 <meta property="og:image" content="{e(image_abs)}">
+<meta property="og:image:secure_url" content="{e(image_abs)}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="{img_w}">
+<meta property="og:image:height" content="{img_h}">
+<meta property="og:image:alt" content="{e(title)}">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="{e(full_title)}">
+<meta name="twitter:description" content="{e(desc)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{e(image_abs)}">
 <meta name="theme-color" content="#0b1a3a">
