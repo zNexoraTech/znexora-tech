@@ -26,6 +26,7 @@ from common import (PR_FOOTER, ROOT, automation, commit_state, dump_front_matter
                     save_json, slugify, today)
 
 INBOX = ROOT / "inbox"
+POSTS_JA = ROOT / "content" / "posts-ja"
 SECTIONS = {"news", "weekly-recap", "exploited-vulnerabilities", "theory", "practical", "courses", "cheatsheets"}
 ALIASES = {"articles": "theory", "article": "theory", "training": "practical", "course": "courses",
            "cheat-sheets": "cheatsheets", "cheatsheet": "cheatsheets"}  # folder name -> section
@@ -43,6 +44,10 @@ def groups():
     found = {}
     for path in sorted(INBOX.rglob("*")):
         if path.suffix.lower() not in (".docx", ".pptx") + PICTURES or path.name.startswith("~$"):
+            continue
+        rel = path.relative_to(INBOX).parts
+        if rel[0].lower() in ("ja", "japanese", "日本語"):  # a Japanese version of an existing article
+            found.setdefault(("ja", path.stem.strip()), {})[path.suffix.lower()[1:] if path.suffix.lower() in (".docx", ".pptx") else "picture"] = path
             continue
         section = path.parent.name.lower() if path.parent != INBOX else "theory"
         section = ALIASES.get(section, section)
@@ -254,6 +259,27 @@ def pptx_article(path, slug, with_text):
 
 
 # ---------------------------------------------------------------- drafts
+def make_japanese(name, files, site):
+    """A Japanese Word file named after the English article's web address, e.g.
+    inbox/ja/japan-s-october-2026-cyber-emergency.docx -> content/posts-ja/japan-s-october-2026-cyber-emergency.md"""
+    from common import parse_front_matter
+    slug = slugify(name)
+    english = ROOT / "content" / "posts" / f"{slug}.md"
+    en_meta, en_body = parse_front_matter(english.read_text(encoding="utf-8")) if english.is_file() else ({}, "")
+    if not english.is_file():
+        print(f"  No English article named '{slug}'. Name the Japanese file after the English article's web address.")
+    docx = files.get("docx")
+    if not docx:
+        raise ValueError("A Japanese version needs a Word (.docx) file")
+    title, summary, body = convert_docx(docx, f"{slug}-ja")
+    if "## Slides" in en_body:  # reuse the English article's slides
+        slides = en_body.split("## Slides", 1)[1]
+        body += "\n\n## スライド" + slides.replace("Download the slides as PDF", "スライドを PDF でダウンロード").replace("![Slide ", "![スライド ")
+    meta = {"title": title, "date": en_meta.get("date") or today().isoformat(), "category": en_meta.get("category", "theory"),
+            "summary": summary, "author": site.get("author") or site["name"], "translated_from": slug, "drafted_by": "upload"}
+    return slug, title, dump_front_matter(meta, body)
+
+
 def make_article(section, name, files, site):
     docx, pptx, picture = files.get("docx"), files.get("pptx"), files.get("picture")
     clean = re.sub(r"[-_]+", " ", name).strip()
@@ -309,20 +335,24 @@ def main():
         print(f"- {section}: {name} ({', '.join(sorted(files))})")
         sources = [str(p.relative_to(ROOT)) for p in files.values()]
         hashes = {s: file_hash(ROOT / s) for s in sources}
+        maker = make_japanese if section == "ja" else make_article
+        folder = POSTS_JA if section == "ja" else ROOT / "content" / "posts"
         if args.dry_run:
-            slug, title, content = make_article(section, name, files, site)
-            (ROOT / "content" / "posts" / f"{slug}.md").write_text(content, encoding="utf-8")
-            print(f"  wrote content/posts/{slug}.md")
+            slug, title, content = maker(name, files, site) if section == "ja" else maker(section, name, files, site)
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / f"{slug}.md").write_text(content, encoding="utf-8")
+            print(f"  wrote {(folder / f'{slug}.md').relative_to(ROOT)}")
             done.update(hashes)
             continue
         try:
             branch_slug = slugify(name)
             git("checkout", "-B", f"draft/upload-{branch_slug}", "main")
-            slug, title, content = make_article(section, name, files, site)
-            post = ROOT / "content" / "posts" / f"{slug}.md"
+            slug, title, content = maker(name, files, site) if section == "ja" else maker(section, name, files, site)
+            folder.mkdir(parents=True, exist_ok=True)
+            post = folder / f"{slug}.md"
             post.write_text(content, encoding="utf-8")
             git("add", str(post))
-            for extra in [IMAGES / slug, IMAGES / f"{slug}.jpg", FILES / f"{slug}.pdf"] + [IMAGES / f"{slug}{x}" for x in PICTURES]:
+            for extra in [IMAGES / slug, IMAGES / f"{slug}-ja", IMAGES / f"{slug}.jpg", FILES / f"{slug}.pdf"] + [IMAGES / f"{slug}{x}" for x in PICTURES]:
                 if extra.exists():
                     git("add", str(extra))
             git("rm", "-q", *sources)  # the inbox empties itself when you approve
@@ -341,7 +371,7 @@ def main():
             print(f"  could not create the draft: {(exc.stderr or str(exc)).strip()[:300]}")
         finally:
             subprocess.run(["git", "checkout", "-f", "main"], cwd=ROOT, capture_output=True)
-            subprocess.run(["git", "clean", "-fdq", "assets/images", "assets/files", "content/posts"], cwd=ROOT,
+            subprocess.run(["git", "clean", "-fdq", "assets/images", "assets/files", "content/posts", "content/posts-ja"], cwd=ROOT,
                            capture_output=True)
     save_json("imported.json", done)
     commit_state("Robot memory: imported uploads", args.dry_run)

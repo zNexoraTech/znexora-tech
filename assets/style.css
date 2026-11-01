@@ -302,3 +302,13 @@ a.tag:hover { text-decoration: underline; }
 .t-course { --k: #4f46e5; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .t-course { --k: #a5b4fc; } }
 :root[data-theme="dark"] .t-course { --k: #a5b4fc; }
+
+/* Language switch and Japanese typography */
+.lang-switch { display: inline-flex; align-items: center; min-height: 2.6rem; padding: 0 .95rem; border: 1px solid var(--line); border-radius: 999px; background: var(--head-field); color: var(--head-ink); font-weight: 700; font-size: .92rem; text-decoration: none; white-space: nowrap; }
+.lang-switch:hover { border-color: var(--link); color: var(--link); }
+.lang-badge { display: inline-block; margin-left: .4rem; padding: .05rem .4rem; border-radius: 4px; font-size: .68rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); vertical-align: 1px; }
+:lang(ja) body, :lang(ja) .prose, :lang(ja) .keypoints p, :lang(ja) .lead { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", Meiryo, var(--ui); }
+:lang(ja) .prose { font-size: 1.04rem; line-height: 1.95; letter-spacing: .01em; }
+:lang(ja) .prose h2, :lang(ja) .prose h3, :lang(ja) h1, :lang(ja) h2, :lang(ja) h3 { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", Meiryo, var(--ui); font-stretch: 100%; letter-spacing: 0; }
+:lang(ja) .kicker, :lang(ja) .widget h2, :lang(ja) .latest-rail h2, :lang(ja) .footer h2 { letter-spacing: .04em; }
+:lang(ja) .lead-title, :lang(ja) .article-head h1, :lang(ja) .page-head h1 { line-height: 1.3; }

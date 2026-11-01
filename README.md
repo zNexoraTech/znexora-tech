@@ -252,6 +252,12 @@ LinkedIn tokens last **60 days**. Put a reminder in your calendar to generate a 
 
 **Posting as your company page** requires LinkedIn's **Community Management API** product, which LinkedIn approves only after verifying your business. If you get approval, generate the token with `w_organization_social` instead and add the secret `LINKEDIN_AUTHOR` with the value `urn:li:organization:<your page number>` (the number in your page's admin address). Until then, posting to your profile and resharing to the page takes one tap.
 
+## Japanese version (日本語)
+
+The whole site is also published in Japanese at `/ja/` (for example https://znexoratech.com/ja/), with an **English / 日本語** switch in the header. Menus, labels and pages are in Japanese; articles that have a Japanese translation are shown in Japanese, and other articles are listed with an **英語** (English) badge.
+
+**Adding a Japanese article:** write the Japanese text in Word (first line Heading 1 = title, first paragraph = summary), name the file after the English article's web address (for example `japan-s-october-2026-cyber-emergency.docx`), and upload it to **inbox > ja**. After you merge the draft, it appears at `/ja/posts/<same name>/`, reusing the English article's cover, pictures and slides. The About and Privacy pages in Japanese are in `content/pages-ja/`.
+
 ## Website security (built in)
 
 - **Strict browser security rules (Content Security Policy):** only the site's own scripts, styles and fonts may load; images only from the site and your Blogger blog. No inline code is allowed.
